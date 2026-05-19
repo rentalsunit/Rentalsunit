@@ -3,9 +3,8 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, Bell, ChevronDown, X, Upload, User, Mail, Phone, ShieldCheck, 
-  Check, CheckCircle2, Clock, AlertTriangle, ShieldAlert, Filter, Trash2, Camera, Briefcase, Building2, LogOut, Lock, Database, Cloud
+  Check, CheckCircle2, Clock, AlertTriangle, ShieldAlert, Filter, Trash2, Camera, Briefcase, Building2, LogOut, Lock
 } from 'lucide-react';
-import SupabaseManagerModal from './SupabaseManagerModal';
 
 
 const Header = ({ activeCategory, activeTab, setActiveTab }) => {
@@ -277,20 +276,6 @@ const Header = ({ activeCategory, activeTab, setActiveTab }) => {
           />
         </div>
         
-        {/* --- SUPABASE CLOUD SYNC MANAGER BUTTON --- */}
-        <motion.button 
-          onClick={() => setShowSupabaseModal(true)}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          style={{ position: 'relative', width: '42px', height: '42px', borderRadius: '15px', background: '#ecfdf5', border: '1px solid #10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#059669', boxShadow: '0 4px 10px rgba(16,185,129,0.15)', cursor: 'pointer', flexShrink: 0 }}
-          title="Supabase Cloud Database Manager"
-        >
-          <Database size={20} />
-          <div style={{ position: 'absolute', bottom: '-2px', right: '-2px', background: '#10b981', color: 'white', width: '14px', height: '14px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white' }}>
-            <Cloud size={10} />
-          </div>
-        </motion.button>
-
         {/* --- NOTIFICATION BELL BUTTON --- */}
         <motion.button 
           onClick={() => setShowNotifModal(true)}
@@ -608,7 +593,6 @@ const Header = ({ activeCategory, activeTab, setActiveTab }) => {
         document.body
       )}
 
-      <SupabaseManagerModal isOpen={showSupabaseModal} onClose={() => setShowSupabaseModal(false)} />
     </header>
   );
 };
