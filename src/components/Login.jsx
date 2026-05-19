@@ -7,7 +7,7 @@ import {
   HelpCircle, ShieldAlert, ArrowLeft, Copy, Check
 } from 'lucide-react';
 
-import { getStoredUsers } from '../lib/masterData';
+import { getStoredUsers, saveStoredUsers } from '../lib/masterData';
 
 const Login = ({ onLogin }) => {
   const [username, setUsername] = useState('');
@@ -20,9 +20,9 @@ const Login = ({ onLogin }) => {
   const [showSandbox, setShowSandbox] = useState(() => import.meta.env.VITE_ENABLE_SANDBOX_LOGIN === 'true');
 
   // ──────────────────────────────────────────────
-  // FORGOT PASSWORD FLOW STATE MACHINE
+  // FORGOT PASSWORD & FIRST LOGIN FLOW STATES
   // ──────────────────────────────────────────────
-  // view: 'login' | 'forgot_username' | 'forgot_question' | 'forgot_success' | 'locked_out'
+  // view: 'login' | 'forgot_username' | 'forgot_question' | 'forgot_success' | 'locked_out' | 'first_login_prompt'
   const [view, setView] = useState('login');
   const [fpUsername, setFpUsername] = useState('');
   const [fpAnswer, setFpAnswer] = useState('');
@@ -32,6 +32,11 @@ const Login = ({ onLogin }) => {
   const [fpError, setFpError] = useState('');
   const [fpCopied, setFpCopied] = useState(false);
   const [lockoutCountdown, setLockoutCountdown] = useState(20);
+
+  const [firstLoginUser, setFirstLoginUser] = useState(null);
+  const [flNewPass, setFlNewPass] = useState('');
+  const [flConfirmPass, setFlConfirmPass] = useState('');
+  const [flError, setFlError] = useState('');
 
   // Security questions database — keyed by username
   const securityDB = {
@@ -211,6 +216,16 @@ const Login = ({ onLogin }) => {
       return;
     }
 
+    if (finalUserMatch && (finalUserMatch.isFirstLogin || finalUserMatch.tempPassGiven === password)) {
+      setIsLoading(false);
+      setFirstLoginUser(finalUserMatch);
+      setFlNewPass('');
+      setFlConfirmPass('');
+      setFlError('');
+      setView('first_login_prompt');
+      return;
+    }
+
     setLoadingStep('Establishing 256-bit Secure Handshake...');
 
     setTimeout(() => {
@@ -242,6 +257,73 @@ const Login = ({ onLogin }) => {
           
           onLogin();
         }, 600);
+      }, 600);
+    }, 600);
+  };
+
+  const handleCommitFirstLoginPass = async (e) => {
+    e.preventDefault();
+    if (flNewPass !== flConfirmPass) {
+      setFlError("New password and confirmation do not match.");
+      return;
+    }
+    if (flNewPass.length < 8) {
+      setFlError("Password must be at least 8 characters for enterprise security.");
+      return;
+    }
+
+    setFlError("");
+    setIsLoading(true);
+    setLoadingStep("Updating Master Security Directory...");
+
+    const allStoredUsers = getStoredUsers();
+    const updatedUsers = allStoredUsers.map(u => {
+      if (u.id === firstLoginUser.id || u.username === firstLoginUser.username) {
+        return {
+          ...u,
+          pass: flNewPass,
+          tempPassGiven: null,
+          isFirstLogin: false,
+          status: 'Active',
+          lastLogin: 'Just Now (Password Established)',
+          twoFactor: true
+        };
+      }
+      return u;
+    });
+
+    saveStoredUsers(updatedUsers);
+
+    if (import.meta.env.VITE_SUPABASE_URL && !import.meta.env.VITE_SUPABASE_URL.includes('your-supabase-project')) {
+      try {
+        const { supabase } = await import('../lib/supabaseClient');
+        await supabase.from('users').update({
+          pass: flNewPass,
+          tempPassGiven: null,
+          isFirstLogin: false,
+          status: 'Active'
+        }).eq('username', firstLoginUser.username);
+      } catch(err) { console.warn(err); }
+    }
+
+    setTimeout(() => {
+      setLoadingStep("Synchronizing Secure Enterprise Session...");
+      setTimeout(() => {
+        setIsLoading(false);
+        localStorage.setItem('realtyos_authenticated', 'true');
+        
+        const fullProfile = {
+          name: firstLoginUser.name || 'Enterprise User',
+          role: firstLoginUser.role || 'Executive Administrator',
+          username: firstLoginUser.username || username,
+          email: firstLoginUser.email || `${firstLoginUser.username}@realtyos.gh`,
+          phone: firstLoginUser.phone || '+233 54 102 9384',
+          department: firstLoginUser.department || firstLoginUser.dept || 'Executive Administration',
+          avatar: firstLoginUser.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80'
+        };
+        localStorage.setItem('realtyos_user_profile', JSON.stringify(fullProfile));
+        window.dispatchEvent(new CustomEvent('realtyos_profile_updated'));
+        onLogin();
       }, 600);
     }, 600);
   };
@@ -379,6 +461,68 @@ const Login = ({ onLogin }) => {
                   </button>
                   <button type="submit" style={{ flex: 2, padding: '16px', borderRadius: '100px', border: 'none', background: '#00875a', color: 'white', fontWeight: '800', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 8px 20px rgba(0,135,90,0.3)' }}>
                     Verify Answer <ShieldCheck size={16} />
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          )}
+
+          {/* ── FIRST-TIME LOGIN: ESTABLISH PERMANENT PASSWORD ── */}
+          {view === 'first_login_prompt' && firstLoginUser && (
+            <motion.div key="first-login-prompt" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} style={{ display: 'flex', flexDirection: 'column', gap: '24px', flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#00875a', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}><Building2 size={20} /></div>
+                <span style={{ fontSize: '20px', fontWeight: '900', color: '#0f172a', letterSpacing: '-0.5px' }}>Realty<span style={{ color: '#00875a' }}>OS</span></span>
+              </div>
+              
+              <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '20px', padding: '20px 24px', display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+                <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: '#f59e0b', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><ShieldAlert size={24} /></div>
+                <div>
+                  <h3 style={{ margin: '0 0 6px', fontSize: '18px', fontWeight: '900', color: '#9a3412' }}>First-Time Account Setup</h3>
+                  <p style={{ margin: 0, fontSize: '13px', color: '#c2410c', lineHeight: '1.5' }}>
+                    Welcome, <strong>{firstLoginUser.name}</strong>. You are logging in with a temporary IT-issued credential. For organizational security compliance, please establish your confidential permanent password before entering the workspace.
+                  </p>
+                </div>
+              </div>
+
+              {flError && (
+                <div style={{ background: '#fef2f2', border: '1px solid #f87171', color: '#991b1b', padding: '12px 18px', borderRadius: '100px', fontSize: '13px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <AlertCircle size={16} style={{ flexShrink: 0, color: '#ef4444' }} /><span>{flError}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleCommitFirstLoginPass} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#475569', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>New Confidential Password (Min 8 chars)</label>
+                  <input
+                    type="password"
+                    placeholder="Enter robust new password"
+                    value={flNewPass}
+                    onChange={e => setFlNewPass(e.target.value)}
+                    required
+                    autoFocus
+                    style={{ width: '100%', padding: '16px 24px', borderRadius: '100px', border: '1.5px solid #cbd5e1', background: 'white', color: '#0f172a', fontSize: '14px', fontWeight: '600', outline: 'none', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#475569', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Confirm New Password</label>
+                  <input
+                    type="password"
+                    placeholder="Re-enter robust new password"
+                    value={flConfirmPass}
+                    onChange={e => setFlConfirmPass(e.target.value)}
+                    required
+                    style={{ width: '100%', padding: '16px 24px', borderRadius: '100px', border: '1.5px solid #cbd5e1', background: 'white', color: '#0f172a', fontSize: '14px', fontWeight: '600', outline: 'none', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                  <button type="button" onClick={() => setView('login')} style={{ flex: 1, padding: '16px', borderRadius: '100px', border: '1.5px solid #cbd5e1', background: 'white', color: '#475569', fontWeight: '800', fontSize: '14px', cursor: 'pointer' }}>
+                    Cancel
+                  </button>
+                  <button type="submit" style={{ flex: 2, padding: '16px', borderRadius: '100px', border: 'none', background: '#00875a', color: 'white', fontWeight: '800', fontSize: '14px', cursor: 'pointer', boxShadow: '0 8px 20px rgba(0,135,90,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    Commit Password & Login <ArrowRight size={16} />
                   </button>
                 </div>
               </form>

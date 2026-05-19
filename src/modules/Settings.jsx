@@ -272,33 +272,19 @@ const Settings = () => {
     setTimeout(() => setSuccessMsg(''), 4000);
   };
 
-  const handleStartFirstLoginSimulation = (user) => {
-    setSimulatingFirstLoginEmp(user);
-    setFirstLoginTempPassInput(user.tempPassGiven || user.pass || 'Realty-XXXX');
-    setFirstLoginNewPassInput('');
-    setFirstLoginConfirmPassInput('');
-  };
-
-  const handleConfirmFirstLoginPasswordChange = (e) => {
-    e.preventDefault();
-    if (firstLoginNewPassInput !== firstLoginConfirmPassInput) {
-      alert("New password and confirmation do not match!");
-      return;
-    }
-    if (firstLoginNewPassInput.length < 8) {
-      alert("Password must be at least 8 characters for enterprise security.");
-      return;
-    }
+  const handleResetUserPassword = (userId) => {
+    const randomPin = Math.floor(1000 + Math.random() * 9000);
+    const newTempPass = `Realty-${randomPin}`;
+    const userToReset = systemUsers.find(u => u.id === userId);
 
     const updatedUsers = systemUsers.map(u => {
-      if (u.id === simulatingFirstLoginEmp.id) {
+      if (u.id === userId) {
         return {
           ...u,
-          status: 'Active',
-          isFirstLogin: false,
-          lastLogin: 'Just Now (Password Established)',
-          twoFactor: true,
-          pass: firstLoginNewPassInput
+          status: 'Pending 1st Login',
+          isFirstLogin: true,
+          tempPassGiven: newTempPass,
+          pass: newTempPass
         };
       }
       return u;
@@ -307,10 +293,14 @@ const Settings = () => {
     setSystemUsers(updatedUsers);
     saveStoredUsers(updatedUsers);
 
-    const empName = simulatingFirstLoginEmp.name;
-    setSimulatingFirstLoginEmp(null);
-    setSuccessMsg(`🔒 Success: ${empName} has successfully completed the first-time password setup protocol! Account is now Active.`);
-    setTimeout(() => setSuccessMsg(''), 5000);
+    setGeneratedCreds({
+      empName: userToReset?.name || 'Employee',
+      username: userToReset?.username || 'user',
+      tempPassword: newTempPass
+    });
+
+    setSuccessMsg(`🔒 Success: Temporary PIN ${newTempPass} generated for ${userToReset?.name || 'Employee'}. On next login, they will be required to establish a permanent password.`);
+    setTimeout(() => setSuccessMsg(''), 6000);
   };
 
   // --- RBAC HANDLERS ---
@@ -740,63 +730,6 @@ const Settings = () => {
                 )}
               </AnimatePresence>
 
-              {/* POP-UP MODAL: SIMULATE FIRST-TIME LOGIN PASSWORD CHANGE */}
-              <AnimatePresence>
-                {simulatingFirstLoginEmp && (
-                  <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(10px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-                    <motion.div 
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                      style={{ background: 'white', borderRadius: '32px', padding: '48px', maxWidth: '600px', width: '100%', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)', border: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', gap: '28px' }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #e2e8f0', paddingBottom: '20px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                          <div style={{ width: '56px', height: '56px', borderRadius: '20px', background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Unlock size={28} />
-                          </div>
-                          <div>
-                            <span style={{ padding: '4px 12px', background: '#fef3c7', color: '#b45309', border: '1px solid #fde68a', borderRadius: '14px', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase' }}>First-Time Authentication Protocol</span>
-                            <h3 style={{ margin: '6px 0 0', fontSize: '24px', fontWeight: '900', color: '#0f172a' }}>Establish Permanent Password</h3>
-                          </div>
-                        </div>
-                        <button onClick={() => setSimulatingFirstLoginEmp(null)} style={{ background: '#f1f5f9', border: 'none', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b' }}>
-                          <X size={18} />
-                        </button>
-                      </div>
-
-                      <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '20px', border: '1px solid #e2e8f0', fontSize: '14px', color: '#334155', lineHeight: '1.6' }}>
-                        Welcome, <strong style={{ color: 'var(--primary)' }}>{simulatingFirstLoginEmp.name}</strong> ({simulatingFirstLoginEmp.username}). You are logging in for the first time with temporary credentials. Enterprise compliance mandates that you immediately replace your temporary password with a secure, permanent confidential password.
-                      </div>
-
-                      <form onSubmit={handleConfirmFirstLoginPasswordChange} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px' }}>Current Temporary Password</label>
-                          <input type="text" value={firstLoginTempPassInput} disabled style={{ width: '100%', padding: '16px 20px', borderRadius: '16px', border: '1px solid #cbd5e1', fontSize: '15px', fontWeight: '800', color: '#64748b', background: '#f1f5f9', boxSizing: 'border-box' }} />
-                        </div>
-
-                        <div>
-                          <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px' }}>New Confidential Password (Min 8 chars)</label>
-                          <input type="password" placeholder="Enter robust new password" value={firstLoginNewPassInput} onChange={e => setFirstLoginNewPassInput(e.target.value)} style={{ width: '100%', padding: '16px 20px', borderRadius: '16px', border: '1px solid #cbd5e1', fontSize: '15px', fontWeight: '800', color: '#0f172a', outline: 'none', background: 'white', boxSizing: 'border-box' }} required />
-                        </div>
-
-                        <div>
-                          <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px' }}>Confirm New Password</label>
-                          <input type="password" placeholder="Re-enter robust new password" value={firstLoginConfirmPassInput} onChange={e => setFirstLoginConfirmPassInput(e.target.value)} style={{ width: '100%', padding: '16px 20px', borderRadius: '16px', border: '1px solid #cbd5e1', fontSize: '15px', fontWeight: '800', color: '#0f172a', outline: 'none', background: 'white', boxSizing: 'border-box' }} required />
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '16px', marginTop: '16px' }}>
-                          <button type="button" onClick={() => setSimulatingFirstLoginEmp(null)} style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#475569', padding: '16px 28px', borderRadius: '16px', fontWeight: '800', fontSize: '15px', cursor: 'pointer' }}>Cancel Protocol</button>
-                          <button type="submit" style={{ background: 'var(--primary)', border: 'none', color: 'white', padding: '16px 36px', borderRadius: '16px', fontWeight: '800', fontSize: '15px', cursor: 'pointer', boxShadow: '0 8px 25px rgba(0, 135, 90, 0.4)' }}>
-                            Commit Permanent Password & Activate Account
-                          </button>
-                        </div>
-                      </form>
-                    </motion.div>
-                  </div>
-                )}
-              </AnimatePresence>
-
               {/* USER CARDS LIST */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
@@ -826,18 +759,18 @@ const Settings = () => {
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       {user.isFirstLogin ? (
-                        <button 
-                          onClick={() => handleStartFirstLoginSimulation(user)}
-                          style={{ background: '#f59e0b', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '16px', fontSize: '13px', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 6px 15px rgba(245, 158, 11, 0.4)', animation: 'pulse 2s infinite' }}
-                        >
-                          <LogIn size={16} /> Simulate First Login
-                        </button>
-                      ) : (
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: '800', color: user.twoFactor ? '#10b981' : '#94a3b8', background: user.twoFactor ? '#ecfdf5' : '#f1f5f9', padding: '6px 12px', borderRadius: '14px', border: user.twoFactor ? '1px solid #a7f3d0' : '1px solid #cbd5e1' }}>
-                          <Lock size={14} /> {user.twoFactor ? '2FA Secured' : '2FA Inactive'}
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: '800', color: '#d97706', background: '#fef3c7', padding: '8px 14px', borderRadius: '14px', border: '1px solid #fde68a' }}>
+                          <Key size={14} /> PIN: {user.tempPassGiven || user.pass}
                         </span>
+                      ) : (
+                        <button 
+                          onClick={() => handleResetUserPassword(user.id)}
+                          style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#475569', padding: '10px 18px', borderRadius: '16px', fontSize: '13px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: '0.2s' }}
+                        >
+                          <KeyRound size={16} /> Reset PIN
+                        </button>
                       )}
 
                       <button onClick={() => handleRevokeUser(user.id)} style={{ background: '#fef2f2', border: '1px solid #fca5a5', color: '#dc2626', padding: '10px 18px', borderRadius: '16px', fontSize: '13px', fontWeight: '800', cursor: 'pointer', transition: 'all 0.2s' }}>
