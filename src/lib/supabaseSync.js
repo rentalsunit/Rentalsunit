@@ -156,11 +156,17 @@ export const getSupabaseMigrationSQL = () => `
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
+  username TEXT UNIQUE,
   email TEXT UNIQUE NOT NULL,
+  pass TEXT,
+  "tempPassGiven" TEXT,
   phone TEXT,
-  role TEXT DEFAULT 'Portfolio Director',
+  role TEXT DEFAULT 'Executive Administrator',
   department TEXT DEFAULT 'Executive Management',
   avatar TEXT,
+  status TEXT DEFAULT 'Active',
+  "isFirstLogin" BOOLEAN DEFAULT false,
+  "twoFactor" BOOLEAN DEFAULT true,
   "securityQuestion" TEXT,
   "securityAnswer" TEXT,
   "failedLoginAttempts" INTEGER DEFAULT 0,
@@ -168,6 +174,13 @@ CREATE TABLE IF NOT EXISTS users (
   "lastLogin" TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::TEXT, NOW()) NOT NULL
 );
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT UNIQUE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS pass TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS "tempPassGiven" TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'Active';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS "isFirstLogin" BOOLEAN DEFAULT false;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS "twoFactor" BOOLEAN DEFAULT true;
 
 -- 2. SYSTEM NOTIFICATIONS TABLE
 CREATE TABLE IF NOT EXISTS notifications (
