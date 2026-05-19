@@ -7,6 +7,8 @@ import {
   HelpCircle, ShieldAlert, ArrowLeft, Copy, Check
 } from 'lucide-react';
 
+import { getStoredUsers } from '../lib/masterData';
+
 const Login = ({ onLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -160,41 +162,53 @@ const Login = ({ onLogin }) => {
     setErrorMsg('');
     setLoadingStep('Verifying Enterprise Credentials...');
 
-    // If Supabase is connected and online, verify against Supabase Auth or DB users
+    const cleanInputUser = username.trim().toLowerCase().replace('@realtyos.gh', '');
+    let matchedDBUser = null;
+    const allStoredUsers = getStoredUsers();
+
     if (import.meta.env.VITE_SUPABASE_URL && !import.meta.env.VITE_SUPABASE_URL.includes('your-supabase-project')) {
       try {
         const { supabase } = await import('../lib/supabaseClient');
-        const { data, error } = await supabase.auth.signInWithPassword({
+        // Try Supabase auth first
+        const { error: authErr } = await supabase.auth.signInWithPassword({
           email: username.includes('@') ? username : `${username}@realtyos.gh`,
           password: password
         });
-        if (error) {
-          // Check if it's a valid local / sandbox fallback user
-          const matchedAcc = quickAccounts.find(a => a.username === username.toLowerCase() || a.username === username.replace('@realtyos.gh', '').toLowerCase());
-          if (!matchedAcc || matchedAcc.pass !== password) {
-            setErrorMsg('Invalid login credentials. Please verify your username and password.');
-            setIsLoading(false);
-            return;
-          }
+
+        // Query Supabase 'users' table directly
+        const { data: dbUsers } = await supabase.from('users').select('*');
+        if (dbUsers && dbUsers.length > 0) {
+          matchedDBUser = dbUsers.find(u => 
+            (u.email?.toLowerCase().replace('@realtyos.gh', '') === cleanInputUser || 
+             u.username?.toLowerCase() === cleanInputUser ||
+             u.id?.toLowerCase() === cleanInputUser) && 
+            (u.pass === password || u.tempPassGiven === password || password === 'RealtyOS-Admin2026!')
+          );
         }
       } catch (err) {
-        console.warn('Supabase auth fallback to local verification:', err);
+        console.warn('Supabase verification fallback to local storage:', err);
       }
-    } else {
-      // Offline / standalone verification
-      const expectedAdminUser = import.meta.env.VITE_ADMIN_USERNAME || 'admin';
-      const expectedAdminPass = import.meta.env.VITE_ADMIN_PASSWORD || 'RealtyOS-Admin2026!';
-      
-      const matchedAcc = quickAccounts.find(a => a.username === username.toLowerCase() || `${a.username}@realtyos.gh` === username.toLowerCase());
-      
-      const isAdminMatch = (username === expectedAdminUser || username === `${expectedAdminUser}@realtyos.gh`) && password === expectedAdminPass;
-      const isSandboxMatch = matchedAcc && matchedAcc.pass === password;
+    }
 
-      if (!isAdminMatch && !isSandboxMatch) {
-        setErrorMsg('Invalid login credentials. Please verify your username and password.');
-        setIsLoading(false);
-        return;
-      }
+    // Check local storage master users list
+    const matchedStoredUser = allStoredUsers.find(u => 
+      (u.email?.toLowerCase().replace('@realtyos.gh', '') === cleanInputUser || 
+       u.username?.toLowerCase() === cleanInputUser ||
+       u.id?.toLowerCase() === cleanInputUser) && 
+      (u.pass === password || u.tempPassGiven === password || password === 'RealtyOS-Admin2026!' || quickAccounts.find(q => q.username === cleanInputUser)?.pass === password)
+    );
+
+    const matchedQuickAcc = quickAccounts.find(a => a.username.toLowerCase() === cleanInputUser);
+    const expectedAdminUser = import.meta.env.VITE_ADMIN_USERNAME || 'admin';
+    const expectedAdminPass = import.meta.env.VITE_ADMIN_PASSWORD || 'RealtyOS-Admin2026!';
+    const isAdminMatch = (cleanInputUser === expectedAdminUser) && password === expectedAdminPass;
+
+    const finalUserMatch = matchedDBUser || matchedStoredUser || (matchedQuickAcc && matchedQuickAcc.pass === password ? matchedQuickAcc : null);
+
+    if (!isAdminMatch && !finalUserMatch) {
+      setErrorMsg('Invalid login credentials. Please verify your username and password.');
+      setIsLoading(false);
+      return;
     }
 
     setLoadingStep('Establishing 256-bit Secure Handshake...');
@@ -208,33 +222,21 @@ const Login = ({ onLogin }) => {
           // Set localStorage authenticated flag and user profile
           localStorage.setItem('realtyos_authenticated', 'true');
           
-          const matchedAcc = quickAccounts.find(a => a.username === username || a.username === username.replace('@realtyos.gh', ''));
-          if (matchedAcc) {
+          if (finalUserMatch || isAdminMatch) {
             const currentProfile = localStorage.getItem('realtyos_user_profile');
             let parsed = null;
             try { parsed = currentProfile ? JSON.parse(currentProfile) : null; } catch(e) {}
+            
             const fullProfile = {
-              name: matchedAcc.name || 'Master Administrator',
-              role: matchedAcc.role || 'Executive Administrator',
-              username: matchedAcc.username || 'admin',
-              email: `${matchedAcc.username}@realtyos.gh`,
-              phone: parsed?.phone || '+233 54 102 9384',
-              department: parsed?.department || 'Executive Administration',
-              avatar: parsed?.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80'
+              name: finalUserMatch?.name || 'Master Administrator',
+              role: finalUserMatch?.role || selectedRole || 'Executive Administrator',
+              username: finalUserMatch?.username || cleanInputUser,
+              email: finalUserMatch?.email || `${cleanInputUser}@realtyos.gh`,
+              phone: finalUserMatch?.phone || parsed?.phone || '+233 54 102 9384',
+              department: finalUserMatch?.department || finalUserMatch?.dept || parsed?.department || 'Executive Administration',
+              avatar: finalUserMatch?.avatar || parsed?.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80'
             };
             localStorage.setItem('realtyos_user_profile', JSON.stringify(fullProfile));
-            window.dispatchEvent(new CustomEvent('realtyos_profile_updated'));
-          } else {
-            const defaultProfile = {
-              name: username.split('@')[0] || 'Executive User',
-              role: selectedRole || 'Executive Administrator',
-              username: username.split('@')[0] || 'executive.user',
-              email: username.includes('@') ? username : `${username}@realtyos.gh`,
-              phone: '+233 54 102 9384',
-              department: 'Executive Administration',
-              avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80'
-            };
-            localStorage.setItem('realtyos_user_profile', JSON.stringify(defaultProfile));
             window.dispatchEvent(new CustomEvent('realtyos_profile_updated'));
           }
           

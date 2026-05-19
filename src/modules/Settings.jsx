@@ -9,6 +9,8 @@ import {
   KeyRound, LogIn, Unlock, AlertCircle, ShieldCheck, Plus, CheckSquare, Square
 } from 'lucide-react';
 
+import { getStoredUsers, saveStoredUsers, getStoredStaffEmployees } from '../lib/masterData';
+
 const Settings = () => {
   const [activeSection, setActiveSection] = useState('profile');
   const [successMsg, setSuccessMsg] = useState('');
@@ -115,27 +117,26 @@ const Settings = () => {
   const [orgPhone, setOrgPhone] = useState('+233 30 277 8899');
   const [orgEmail, setOrgEmail] = useState('corporate@realtyos.gh');
 
-  // --- ENTERPRISE EMPLOYEES DIRECTORY (Staff without login access) ---
-  const [enterpriseEmployees, setEnterpriseEmployees] = useState([
-    { id: 'EMP-K9X2', name: 'Louis Kemenyo', role: 'Portfolio Director', email: 'louis@realtyos.gh', phone: '+233 54 102 9384', hasLogin: true },
-    { id: 'EMP-M4T8', name: 'Sarah Miller', role: 'Head of Leasing', email: 'sarah.m@realtyos.gh', phone: '+233 20 882 1092', hasLogin: true },
-    { id: 'EMP-E7R1', name: 'Michael K.', role: 'Chief Facility Engineer', email: 'michael.k@realtyos.gh', phone: '+233 24 771 2930', hasLogin: true },
-    { id: 'EMP-A2P4', name: 'Sarah Osei', role: 'Senior Portfolio Accountant', email: 'sarah.o@realtyos.gh', phone: '+233 55 901 8823', hasLogin: true },
-    { id: 'EMP-W8N5', name: 'David Wilson', role: 'Safety & Compliance Chief', email: 'david.w@realtyos.gh', phone: '+233 26 441 9021', hasLogin: true },
-    // Employees currently WITHOUT login access:
-    { id: 'EMP-S3Q1', name: 'Kwame Mensah', role: 'Security Detail Lead', email: 'kwame.m@realtyos.gh', phone: '+233 27 331 9920', hasLogin: false },
-    { id: 'EMP-V9B7', name: 'Victoria Addo', role: 'Client Experience Executive', email: 'vicky.a@realtyos.gh', phone: '+233 50 119 2839', hasLogin: false },
-    { id: 'EMP-T1Z6', name: 'Kofi Antwi', role: 'HVAC Specialist Technician', email: 'kofi.a@realtyos.gh', phone: '+233 24 991 1029', hasLogin: false }
-  ]);
-
   // --- SYSTEM USERS (Staff with active or temporary login credentials) ---
-  const [systemUsers, setSystemUsers] = useState([
-    { id: 'EMP-K9X2', name: 'Louis Kemenyo', username: 'louis.kemenyo', email: 'louis@realtyos.gh', role: 'Executive Administrator', phone: '+233 54 102 9384', lastLogin: 'Today, 01:15 AM', twoFactor: true, status: 'Active', isFirstLogin: false },
-    { id: 'EMP-M4T8', name: 'Sarah Miller', username: 'sarah.miller', email: 'sarah.m@realtyos.gh', role: 'Senior Property Manager', phone: '+233 20 882 1092', lastLogin: 'Yesterday, 04:30 PM', twoFactor: true, status: 'Active', isFirstLogin: false },
-    { id: 'EMP-E7R1', name: 'Michael K.', username: 'michael.k', email: 'michael.k@realtyos.gh', role: 'Maintenance Dispatcher', phone: '+233 24 771 2930', lastLogin: 'May 15, 11:20 AM', twoFactor: true, status: 'Active', isFirstLogin: false },
-    { id: 'EMP-A2P4', name: 'Sarah Osei', username: 'sarah.osei', email: 'sarah.o@realtyos.gh', role: 'Financial Controller', phone: '+233 55 901 8823', lastLogin: 'May 14, 09:00 AM', twoFactor: false, status: 'Active', isFirstLogin: false },
-    { id: 'EMP-W8N5', name: 'David Wilson', username: 'david.wilson', email: 'david.w@realtyos.gh', role: 'Executive Administrator', phone: '+233 26 441 9021', lastLogin: 'May 12, 02:15 PM', twoFactor: true, status: 'Active', isFirstLogin: false }
-  ]);
+  const [systemUsers, setSystemUsers] = useState(() => {
+    const stored = getStoredUsers();
+    return stored.map(u => ({
+      ...u,
+      lastLogin: u.lastLogin || 'Today',
+      status: u.status || 'Active',
+      twoFactor: u.twoFactor ?? true
+    }));
+  });
+
+  // --- ENTERPRISE EMPLOYEES DIRECTORY (Staff without login access) ---
+  const [enterpriseEmployees, setEnterpriseEmployees] = useState(() => {
+    const staff = getStoredStaffEmployees();
+    const currentUsers = getStoredUsers();
+    return staff.map(emp => ({
+      ...emp,
+      hasLogin: currentUsers.some(u => u.id === emp.id || u.name?.toLowerCase() === emp.name?.toLowerCase())
+    }));
+  });
 
   // Modals & Grant Access States
   const [showGrantAccessModal, setShowGrantAccessModal] = useState(false);
@@ -234,17 +235,22 @@ const Settings = () => {
       id: emp.id,
       name: emp.name,
       username: username,
-      email: emp.email,
+      email: emp.email || `${username}@realtyos.gh`,
       role: selectedRoleForAccess,
-      phone: emp.phone,
+      phone: emp.phone || '+233 24 000 0000',
+      department: emp.department || emp.dept || 'Operations',
+      avatar: emp.passportPhoto || emp.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
       lastLogin: 'Pending 1st Login (Temporary Pass)',
       twoFactor: false,
       status: 'Pending 1st Login',
       isFirstLogin: true,
-      tempPassGiven: tempPassword
+      tempPassGiven: tempPassword,
+      pass: tempPassword
     };
 
-    setSystemUsers([newUserCred, ...systemUsers]);
+    const updatedUsers = [newUserCred, ...systemUsers];
+    setSystemUsers(updatedUsers);
+    saveStoredUsers(updatedUsers);
     setEnterpriseEmployees(enterpriseEmployees.map(e => e.id === emp.id ? { ...e, hasLogin: true } : e));
     setGeneratedCreds({
       empName: emp.name,
@@ -258,7 +264,9 @@ const Settings = () => {
 
   const handleRevokeUser = (userId) => {
     const userToRevoke = systemUsers.find(u => u.id === userId);
-    setSystemUsers(systemUsers.filter(u => u.id !== userId));
+    const updatedUsers = systemUsers.filter(u => u.id !== userId);
+    setSystemUsers(updatedUsers);
+    saveStoredUsers(updatedUsers);
     setEnterpriseEmployees(enterpriseEmployees.map(e => e.id === userId ? { ...e, hasLogin: false } : e));
     setSuccessMsg(`User access revoked for ${userToRevoke?.name || 'employee'} and active API tokens terminated.`);
     setTimeout(() => setSuccessMsg(''), 4000);
@@ -266,7 +274,7 @@ const Settings = () => {
 
   const handleStartFirstLoginSimulation = (user) => {
     setSimulatingFirstLoginEmp(user);
-    setFirstLoginTempPassInput(user.tempPassGiven || 'Realty-XXXX');
+    setFirstLoginTempPassInput(user.tempPassGiven || user.pass || 'Realty-XXXX');
     setFirstLoginNewPassInput('');
     setFirstLoginConfirmPassInput('');
   };
@@ -282,18 +290,22 @@ const Settings = () => {
       return;
     }
 
-    setSystemUsers(systemUsers.map(u => {
+    const updatedUsers = systemUsers.map(u => {
       if (u.id === simulatingFirstLoginEmp.id) {
         return {
           ...u,
           status: 'Active',
           isFirstLogin: false,
           lastLogin: 'Just Now (Password Established)',
-          twoFactor: true
+          twoFactor: true,
+          pass: firstLoginNewPassInput
         };
       }
       return u;
-    }));
+    });
+
+    setSystemUsers(updatedUsers);
+    saveStoredUsers(updatedUsers);
 
     const empName = simulatingFirstLoginEmp.name;
     setSimulatingFirstLoginEmp(null);
