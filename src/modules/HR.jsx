@@ -1,0 +1,2330 @@
+import React, { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Users, UserPlus, Clock, ShieldCheck, DollarSign, Award, AlertTriangle, 
+  CheckCircle2, Search, Filter, Plus, FileText, X, Check, Eye, Briefcase, 
+  Calendar, Star, Wallet, FileCheck, Ban, Landmark, Coins, Play, AlertCircle,
+  Lock, UserCheck, Calculator, LogIn, LogOut, Coffee, BarChart2, QrCode, 
+  Printer, CreditCard, Camera, UploadCloud, PhoneCall, Building2, Download,
+  Badge, Shield
+} from 'lucide-react';
+import html2canvas from 'html2canvas';
+import { generateRealPDF } from '../lib/pdfService';
+
+const HR = () => {
+  const [activeSubTab, setActiveSubTab] = useState('directory'); // directory, attendance, leaves, payroll, loans, sanctions, appraisals
+  const [successMsg, setSuccessMsg] = useState('');
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  
+  // Security Simulation: Toggle between HR Officer and Finance Director
+  const [currentUserRole, setCurrentUserRole] = useState('Finance Director'); // 'HR Officer' vs 'Finance Director'
+
+  // Selected Date for Attendance Roster View
+  const [attendanceDate, setAttendanceDate] = useState('2026-05-17');
+
+  // 1. Staff Directory State
+  const [staffList, setStaffList] = useState([
+    { 
+      id: 'EMP-K9X2', 
+      name: 'Louis Kemenyo', 
+      role: 'Portfolio Director', 
+      dept: 'Executive Management', 
+      rank: 'Executive Staff (Grade 1)',
+      ghanaCardNo: 'GHA-718293819-2',
+      passportPhoto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
+      ghanaCardFront: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
+      ghanaCardBack: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
+      bankName: 'Ecobank Ghana',
+      bankAccName: 'Louis Kemenyo',
+      bankAccNo: '1029384759102',
+      emergencyName: 'Grace Kemenyo (Spouse)',
+      emergencyPhone: '+233 24 111 9021',
+      email: 'louis@realtyos.com', 
+      phone: '+233 54 102 9384',
+      salary: 25000, 
+      formattedSalary: '₵ 25,000 / mo',
+      contract: 'Permanent Full-time', 
+      status: 'Active', 
+      joined: '15 Jan 2022',
+      rating: 4.9,
+      daysPresent: 21,
+      daysLate: 0,
+      daysAbsent: 0,
+      daysOnLeave: 0,
+      attendanceRate: '100%',
+      loansCount: 0,
+      sanctionsCount: 0
+    },
+    { 
+      id: 'EMP-M4T8', 
+      name: 'Sarah Miller', 
+      role: 'Head of Leasing', 
+      dept: 'Sales & Leasing', 
+      rank: 'Senior Staff (Grade 2)',
+      ghanaCardNo: 'GHA-829102938-1',
+      passportPhoto: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+      ghanaCardFront: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
+      ghanaCardBack: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
+      bankName: 'Stanbic Bank',
+      bankAccName: 'Sarah Miller',
+      bankAccNo: '9012837482910',
+      emergencyName: 'Jonathan Miller (Brother)',
+      emergencyPhone: '+233 20 551 2839',
+      email: 'sarah.m@realtyos.com', 
+      phone: '+233 20 882 1092',
+      salary: 14500, 
+      formattedSalary: '₵ 14,500 / mo',
+      contract: 'Permanent Full-time', 
+      status: 'Active', 
+      joined: '01 Mar 2023',
+      rating: 4.8,
+      daysPresent: 19,
+      daysLate: 1,
+      daysAbsent: 0,
+      daysOnLeave: 3, // Medical leave
+      attendanceRate: '98%',
+      loansCount: 1,
+      sanctionsCount: 0
+    },
+    { 
+      id: 'EMP-E7R1', 
+      name: 'Michael K.', 
+      role: 'Chief Facility Engineer', 
+      dept: 'Operations & Maintenance', 
+      rank: 'Senior Staff (Grade 2)',
+      ghanaCardNo: 'GHA-394810293-5',
+      passportPhoto: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80',
+      ghanaCardFront: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
+      ghanaCardBack: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
+      bankName: 'GCB Bank',
+      bankAccName: 'Michael Kojo Mensah',
+      bankAccNo: '3019283948102',
+      emergencyName: 'Akosua Mensah (Mother)',
+      emergencyPhone: '+233 24 881 2930',
+      email: 'michael.k@realtyos.com', 
+      phone: '+233 24 771 2930',
+      salary: 16000, 
+      formattedSalary: '₵ 16,000 / mo',
+      contract: 'Permanent Full-time', 
+      status: 'Active', 
+      joined: '10 Nov 2023',
+      rating: 4.7,
+      daysPresent: 20,
+      daysLate: 1,
+      daysAbsent: 0,
+      daysOnLeave: 0,
+      attendanceRate: '97%',
+      loansCount: 1,
+      sanctionsCount: 0
+    },
+    { 
+      id: 'EMP-A2P4', 
+      name: 'Sarah Osei', 
+      role: 'Senior Portfolio Accountant', 
+      dept: 'Finance & Accounts', 
+      rank: 'Senior Staff (Grade 2)',
+      ghanaCardNo: 'GHA-582910394-8',
+      passportPhoto: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80',
+      ghanaCardFront: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
+      ghanaCardBack: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
+      bankName: 'Absa Bank Ghana',
+      bankAccName: 'Sarah Osei',
+      bankAccNo: '4019283749102',
+      emergencyName: 'Kwabena Osei (Father)',
+      emergencyPhone: '+233 55 221 9021',
+      email: 'sarah.o@realtyos.com', 
+      phone: '+233 55 901 8823',
+      salary: 12500, 
+      formattedSalary: '₵ 12,500 / mo',
+      contract: 'Permanent Full-time', 
+      status: 'Active', 
+      joined: '15 May 2024',
+      rating: 4.9,
+      daysPresent: 21,
+      daysLate: 0,
+      daysAbsent: 0,
+      daysOnLeave: 0,
+      attendanceRate: '100%',
+      loansCount: 1,
+      sanctionsCount: 0
+    },
+    { 
+      id: 'EMP-W8N5', 
+      name: 'David Wilson', 
+      role: 'Safety & Compliance Chief', 
+      dept: 'Compliance & Legal', 
+      rank: 'Executive Staff (Grade 1)',
+      ghanaCardNo: 'GHA-492019283-7',
+      passportPhoto: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=400&q=80',
+      ghanaCardFront: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
+      ghanaCardBack: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
+      bankName: 'Fidelity Bank',
+      bankAccName: 'David Nii Wilson',
+      bankAccNo: '5019283749102',
+      emergencyName: 'Elizabeth Wilson (Sister)',
+      emergencyPhone: '+233 26 111 8823',
+      email: 'david.w@realtyos.com', 
+      phone: '+233 26 441 9021',
+      salary: 13000, 
+      formattedSalary: '₵ 13,000 / mo',
+      contract: 'Permanent Full-time', 
+      status: 'Active', 
+      joined: '05 Jan 2025',
+      rating: 4.6,
+      daysPresent: 18,
+      daysLate: 3,
+      daysAbsent: 0,
+      daysOnLeave: 0,
+      attendanceRate: '94%',
+      loansCount: 0,
+      sanctionsCount: 0
+    },
+    { 
+      id: 'EMP-S3Q1', 
+      name: 'Kwame Mensah', 
+      role: 'Security Detail Lead', 
+      dept: 'Security & Surveillance', 
+      rank: 'Junior Staff (Grade 3)',
+      ghanaCardNo: 'GHA-102938475-4',
+      passportPhoto: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=400&q=80',
+      ghanaCardFront: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
+      ghanaCardBack: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
+      bankName: 'Prudential Bank',
+      bankAccName: 'Kwame Mensah',
+      bankAccNo: '6019283749102',
+      emergencyName: 'Yaa Asantewaa (Wife)',
+      emergencyPhone: '+233 27 551 9021',
+      email: 'kwame.m@realtyos.com', 
+      phone: '+233 27 331 9920',
+      salary: 6500, 
+      formattedSalary: '₵ 6,500 / mo',
+      contract: 'Annual Contract', 
+      status: 'On Leave', 
+      joined: '12 Aug 2024',
+      rating: 4.5,
+      daysPresent: 8,
+      daysLate: 0,
+      daysAbsent: 1,
+      daysOnLeave: 12, // Active vacation
+      attendanceRate: '88%',
+      loansCount: 0,
+      sanctionsCount: 1
+    },
+    { 
+      id: 'EMP-V9B7', 
+      name: 'Victoria Addo', 
+      role: 'Client Experience Executive', 
+      dept: 'Sales & Leasing', 
+      rank: 'Junior Staff (Grade 3)',
+      ghanaCardNo: 'GHA-928374610-9',
+      passportPhoto: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=400&q=80',
+      ghanaCardFront: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
+      ghanaCardBack: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
+      bankName: 'Consolidated Bank Ghana',
+      bankAccName: 'Victoria Addo',
+      bankAccNo: '7019283749102',
+      emergencyName: 'George Addo (Husband)',
+      emergencyPhone: '+233 50 221 2839',
+      email: 'vicky.a@realtyos.com', 
+      phone: '+233 50 119 2839',
+      salary: 8500, 
+      formattedSalary: '₵ 8,500 / mo',
+      contract: 'Annual Contract', 
+      status: 'Active', 
+      joined: '10 Feb 2026',
+      rating: 4.9,
+      daysPresent: 20,
+      daysLate: 0,
+      daysAbsent: 0,
+      daysOnLeave: 0,
+      attendanceRate: '100%',
+      loansCount: 0,
+      sanctionsCount: 0
+    },
+    { 
+      id: 'EMP-T1Z6', 
+      name: 'Kofi Antwi', 
+      role: 'HVAC Specialist Technician', 
+      dept: 'Operations & Maintenance', 
+      rank: 'Subcontractor / Temporary',
+      ghanaCardNo: 'GHA-201928374-3',
+      passportPhoto: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80',
+      ghanaCardFront: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
+      ghanaCardBack: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
+      bankName: 'Access Bank Ghana',
+      bankAccName: 'Kofi Antwi',
+      bankAccNo: '8019283749102',
+      emergencyName: 'Ama Antwi (Sister)',
+      emergencyPhone: '+233 24 111 1029',
+      email: 'kofi.a@realtyos.com', 
+      phone: '+233 24 991 1029',
+      salary: 7200, 
+      formattedSalary: '₵ 7,200 / mo',
+      contract: 'Temporary / Subcontractor', 
+      status: 'Suspended', 
+      joined: '01 Mar 2026',
+      rating: 3.2,
+      daysPresent: 14,
+      daysLate: 4,
+      daysAbsent: 3,
+      daysOnLeave: 0,
+      attendanceRate: '78%',
+      loansCount: 0,
+      sanctionsCount: 2
+    }
+  ]);
+
+  // Onboarding Form Live Inputs State
+  const [newEmpGhanaCard, setNewEmpGhanaCard] = useState('GHA-');
+  const [passportPreview, setPassportPreview] = useState(null);
+  const [ghanaCardFrontPreview, setGhanaCardFrontPreview] = useState(null);
+  const [ghanaCardBackPreview, setGhanaCardBackPreview] = useState(null);
+
+  // 2. Leaves & Vacations State
+  const [leavesList, setLeavesList] = useState([
+    { id: 'LV-401', employee: 'Kwame Mensah', type: 'Annual Vacation', startDate: '2026-05-10', endDate: '2026-05-24', formattedDates: '10 May - 24 May 2026', duration: '14 Days', reason: 'Annual statutory rest entitlement.', status: 'Approved', approvedBy: 'Louis Kemenyo' },
+    { id: 'LV-402', employee: 'Sarah Miller', type: 'Medical Leave', startDate: '2026-05-02', endDate: '2026-05-05', formattedDates: '02 May - 05 May 2026', duration: '3 Days', reason: 'Dental surgery recovery.', status: 'Approved', approvedBy: 'Louis Kemenyo' },
+    { id: 'LV-403', employee: 'Michael K.', type: 'Personal Leave', startDate: '2026-05-28', endDate: '2026-05-30', formattedDates: '28 May - 30 May 2026', duration: '2 Days', reason: 'Family funeral attendance in Kumasi.', status: 'Pending Sign-off', approvedBy: 'Pending' },
+    { id: 'LV-404', employee: 'Victoria Addo', type: 'Maternity Leave', startDate: '2026-07-01', endDate: '2026-10-01', formattedDates: '01 Jul - 01 Oct 2026', duration: '90 Days', reason: 'Statutory 3-month maternity leave.', status: 'Pending Sign-off', approvedBy: 'Pending' },
+  ]);
+
+  // 3. Daily Attendance Logs State
+  const [attendanceLogsList, setAttendanceLogsList] = useState([
+    { id: 'ATT-301', date: '2026-05-17', formattedDate: '17 May 2026', employee: 'Louis Kemenyo', dept: 'Executive Management', clockIn: '07:45 AM', clockOut: '05:30 PM', shiftHours: '9.75 hrs', status: '🟢 Present (On Time)', location: 'HQ Corporate Plaza', notes: 'Routine check-in.' },
+    { id: 'ATT-302', date: '2026-05-17', formattedDate: '17 May 2026', employee: 'Sarah Miller', dept: 'Sales & Leasing', clockIn: '08:00 AM', clockOut: '05:15 PM', shiftHours: '9.25 hrs', status: '🟢 Present (On Time)', location: 'HQ Corporate Plaza', notes: 'Routine check-in.' },
+    { id: 'ATT-303', date: '2026-05-17', formattedDate: '17 May 2026', employee: 'Michael K.', dept: 'Operations & Maintenance', clockIn: '07:30 AM', clockOut: '06:00 PM', shiftHours: '10.5 hrs', status: '🟢 Present (On Time)', location: 'Sunset Luxury Site', notes: 'Facility emergency checks.' },
+    { id: 'ATT-304', date: '2026-05-17', formattedDate: '17 May 2026', employee: 'Sarah Osei', dept: 'Finance & Accounts', clockIn: '08:14 AM', clockOut: '05:00 PM', shiftHours: '8.75 hrs', status: '🟢 Present (On Time)', location: 'HQ Corporate Plaza', notes: 'Routine check-in.' },
+    { id: 'ATT-305', date: '2026-05-17', formattedDate: '17 May 2026', employee: 'David Wilson', dept: 'Compliance & Legal', clockIn: '08:35 AM', clockOut: '04:45 PM', shiftHours: '8.1 hrs', status: '🟡 Present (Late)', location: 'HQ Corporate Plaza', notes: 'Traffic delay on N1 highway.' },
+    { id: 'ATT-306', date: '2026-05-17', formattedDate: '17 May 2026', employee: 'Kwame Mensah', dept: 'Security & Surveillance', clockIn: '--:-- --', clockOut: '--:-- --', shiftHours: '0.0 hrs', status: '🏖️ Approved Leave', location: 'Off Duty', notes: 'Automated detection: Statutory Annual Vacation.' },
+    { id: 'ATT-307', date: '2026-05-17', formattedDate: '17 May 2026', employee: 'Victoria Addo', dept: 'Sales & Leasing', clockIn: '07:55 AM', clockOut: '05:00 PM', shiftHours: '9.0 hrs', status: '🟢 Present (On Time)', location: 'HQ Corporate Plaza', notes: 'Routine check-in.' },
+    { id: 'ATT-308', date: '2026-05-17', formattedDate: '17 May 2026', employee: 'Kofi Antwi', dept: 'Operations & Maintenance', clockIn: '--:-- --', clockOut: '--:-- --', shiftHours: '0.0 hrs', status: '🔴 Unexcused Absent', location: 'No Show', notes: 'Failed to clock in without notification.' },
+  ]);
+
+  // 4. Staff Loans State
+  const [loansList, setLoansList] = useState([
+    { id: 'LN-701', employee: 'Michael K.', principal: 25000, formattedPrincipal: '₵ 25,000', term: '18 Months', interestRate: '5.0%', monthlyInstallmentNum: 1458, monthlyInstallment: '₵ 1,458 / mo', remainingBal: 15000, formattedBal: '₵ 15,000', guarantor: 'Louis Kemenyo', purpose: 'Land acquisition in Dodowa', status: 'Active Amortization', dateDisbursed: '10 Jan 2026' },
+    { id: 'LN-702', employee: 'Sarah Osei', principal: 12000, formattedPrincipal: '₵ 12,000', term: '12 Months', interestRate: '3.5%', monthlyInstallmentNum: 1035, monthlyInstallment: '₵ 1,035 / mo', remainingBal: 8000, formattedBal: '₵ 8,000', guarantor: 'Louis Kemenyo', purpose: 'Solar battery inverter setup', status: 'Active Amortization', dateDisbursed: '01 Mar 2026' },
+  ]);
+
+  // 5. Monthly Salary Runs State (Payroll Logs)
+  const [payrollRunsList, setPayrollRunsList] = useState([
+    { id: 'PAY-2026-05', monthYear: 'May 2026', totalStaff: 8, grossAmount: 103200, formattedGross: '₵ 103,200', loanDeductions: 2493, formattedDeductions: '-₵ 2,493', netAmount: 100707, formattedNet: '₵ 100,707', status: 'Pending Finance Sign-off', runDate: '16 May 2026', runBy: 'HR Officer (Sarah M.)' },
+    { id: 'PAY-2026-04', monthYear: 'April 2026', totalStaff: 8, grossAmount: 103200, formattedGross: '₵ 103,200', loanDeductions: 2493, formattedDeductions: '-₵ 2,493', netAmount: 100707, formattedNet: '₵ 100,707', status: 'Approved & Disbursed', runDate: '28 Apr 2026', runBy: 'Finance Director' },
+  ]);
+
+  // 6. Sanctions State
+  const [sanctionsList, setSanctionsList] = useState([
+    { id: 'SNC-901', employee: 'Kofi Antwi', date: '12 May 2026', infraction: 'Repeated Unexcused Tardiness & Absence', severity: 'Written Warning & Pay Dock', issuer: 'Michael K.', notes: 'Arrived 3 hours late to emergency water line repair without prior notification.' }
+  ]);
+
+  // 7. Appraisals State
+  const [appraisalsList, setAppraisalsList] = useState([
+    { id: 'APR-501', employee: 'Sarah Miller', reviewer: 'Louis Kemenyo', date: '10 May 2026', rating: 4.9, keyAchievements: 'Exceeded Q1 luxury apartment leasing targets by 34%.', recommendation: 'Promote to Executive VP of Sales with 15% salary bump.' }
+  ]);
+
+  // Search & Filters
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterDept, setFilterDept] = useState('all');
+
+  // Modal Controls
+  const [showOnboardModal, setShowOnboardModal] = useState(false);
+  const [showTakeAttendanceModal, setShowTakeAttendanceModal] = useState(false);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [showPayrollModal, setShowPayrollModal] = useState(false);
+  const [showLoanModal, setShowLoanModal] = useState(false);
+  const [showSanctionModal, setShowSanctionModal] = useState(false);
+  const [showAppraisalModal, setShowAppraisalModal] = useState(false);
+  
+  const [selectedStaffProfile, setSelectedStaffProfile] = useState(null);
+  const [printableTagEmployee, setPrintableTagEmployee] = useState(null);
+
+  // Take Daily Attendance Roster Check Form State
+  const [dailyCheckDate, setDailyCheckDate] = useState(new Date().toISOString().split('T')[0]);
+  const [dailyCheckRoster, setDailyCheckRoster] = useState([]);
+
+  // Automated Alphanumeric ID Generator
+  const generateShortEmployeeID = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let randomPart = '';
+    for (let i = 0; i < 4; i++) {
+      randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return `EMP-${randomPart}`;
+  };
+
+  const handleGhanaCardInputChange = (e) => {
+    let val = e.target.value.toUpperCase();
+    if (!val.startsWith('GHA-')) {
+      val = 'GHA-' + val.replace(/GHA-/g, '');
+    }
+    setNewEmpGhanaCard(val);
+  };
+
+  const handleImageUpload = (e, setPreviewCallback) => {
+    const file = e.target.files[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setPreviewCallback(url);
+    }
+  };
+
+  const handleUpdateProfileGhanaCard = (e, side) => {
+    const file = e.target.files[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      const updatedProfile = { 
+        ...selectedStaffProfile, 
+        [side === 'front' ? 'ghanaCardFront' : 'ghanaCardBack']: url 
+      };
+      setSelectedStaffProfile(updatedProfile);
+      setStaffList(prevList => prevList.map(emp => emp.id === selectedStaffProfile.id ? updatedProfile : emp));
+      setSuccessMsg(`Ghana Card (${side === 'front' ? 'Front' : 'Back'}) updated successfully!`);
+      setTimeout(() => setSuccessMsg(''), 4000);
+    }
+  };
+
+  const handleDownloadCardImage = async (format = 'png') => {
+    const element = document.getElementById('printable-id-cards-container');
+    if (!element) return;
+    
+    try {
+      setSuccessMsg(`Generating ultra high-resolution ${format.toUpperCase()} image...`);
+      const canvas = await html2canvas(element, { 
+        scale: 3, // High DPI / Retina resolution
+        useCORS: true, 
+        backgroundColor: '#ffffff',
+        logging: false
+      });
+      
+      const imageURL = canvas.toDataURL(`image/${format}`, format === 'jpeg' ? 0.95 : undefined);
+      const downloadLink = document.createElement('a');
+      downloadLink.href = imageURL;
+      downloadLink.download = `${printableTagEmployee.name.replace(/\s+/g, '_')}_ID_Badge.${format === 'jpeg' ? 'jpg' : 'png'}`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      
+      setSuccessMsg(`ID Card successfully saved as high-resolution ${format.toUpperCase()}!`);
+      setTimeout(() => setSuccessMsg(''), 4000);
+    } catch (err) {
+      console.error("Error generating card screenshot:", err);
+      alert("Failed to generate image. Ensure all photos are accessible or uploaded locally.");
+    }
+  };
+
+  const handleOpenTakeAttendanceModal = () => {
+    const defaultDate = dailyCheckDate;
+    const formattedDisplayDate = new Date(defaultDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+    const preparedRoster = staffList.map(emp => {
+      const activeLeave = leavesList.find(lv => {
+        if (lv.status !== 'Approved') return false;
+        return defaultDate >= lv.startDate && defaultDate <= lv.endDate;
+      });
+
+      if (activeLeave) {
+        return {
+          employeeId: emp.id,
+          name: emp.name,
+          dept: emp.dept,
+          status: '🏖️ Approved Leave',
+          clockIn: '--:-- --',
+          clockOut: '--:-- --',
+          location: 'On Approved Leave',
+          notes: `Automated System Detection: ${activeLeave.type} (${activeLeave.duration})`
+        };
+      }
+
+      return {
+        employeeId: emp.id,
+        name: emp.name,
+        dept: emp.dept,
+        status: '🟢 Present (On Time)',
+        clockIn: '08:00 AM',
+        clockOut: '05:00 PM',
+        location: 'HQ Corporate Plaza',
+        notes: 'Routine check-in'
+      };
+    });
+
+    setDailyCheckRoster(preparedRoster);
+    setShowTakeAttendanceModal(true);
+  };
+
+  const handleUpdateRosterRow = (index, field, val) => {
+    const updated = [...dailyCheckRoster];
+    updated[index][field] = val;
+    if (field === 'status') {
+      if (val === '🔴 Unexcused Absent') {
+        updated[index].clockIn = '--:-- --';
+        updated[index].clockOut = '--:-- --';
+      } else if (val === '🟡 Present (Late)') {
+        updated[index].clockIn = '08:45 AM';
+      }
+    }
+    setDailyCheckRoster(updated);
+  };
+
+  const handleSubmitDailyAttendanceRoster = (e) => {
+    e.preventDefault();
+    const formattedCheckDate = new Date(dailyCheckDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+    const newLogs = dailyCheckRoster.map((item, idx) => ({
+      id: `ATT-${Date.now().toString().slice(-4)}-${idx}`,
+      date: dailyCheckDate,
+      formattedDate: formattedCheckDate,
+      employee: item.name,
+      dept: item.dept,
+      clockIn: item.clockIn,
+      clockOut: item.clockOut,
+      shiftHours: item.clockIn.includes('--') ? '0.0 hrs' : '9.0 hrs',
+      status: item.status,
+      location: item.location,
+      notes: item.notes
+    }));
+
+    const updatedStaff = staffList.map(emp => {
+      const recordedItem = dailyCheckRoster.find(r => r.name === emp.name);
+      if (!recordedItem) return emp;
+
+      let p = emp.daysPresent;
+      let l = emp.daysLate;
+      let a = emp.daysAbsent;
+      let lv = emp.daysOnLeave;
+
+      if (recordedItem.status === '🟢 Present (On Time)') p += 1;
+      else if (recordedItem.status === '🟡 Present (Late)') { p += 1; l += 1; }
+      else if (recordedItem.status === '🔴 Unexcused Absent') a += 1;
+      else if (recordedItem.status === '🏖️ Approved Leave') lv += 1;
+
+      const totalDays = p + a + lv;
+      const rate = totalDays > 0 ? Math.round(((p + lv) / totalDays) * 100) + '%' : '100%';
+
+      return { ...emp, daysPresent: p, daysLate: l, daysAbsent: a, daysOnLeave: lv, attendanceRate: rate };
+    });
+
+    setStaffList(updatedStaff);
+    setAttendanceLogsList([...newLogs, ...attendanceLogsList]);
+    setShowTakeAttendanceModal(false);
+    setSuccessMsg(`Daily attendance roster for ${formattedCheckDate} officially recorded and cumulative metrics updated!`);
+    setTimeout(() => setSuccessMsg(''), 4500);
+  };
+
+  const calculatedTotalGross = useMemo(() => {
+    return staffList.reduce((sum, emp) => sum + emp.salary, 0);
+  }, [staffList]);
+
+  const activeLoanDeductionsTotal = useMemo(() => {
+    return loansList
+      .filter(l => l.status === 'Active Amortization' && l.remainingBal > 0)
+      .reduce((sum, l) => sum + l.monthlyInstallmentNum, 0);
+  }, [loansList]);
+
+  const calculatedNetDisbursement = useMemo(() => {
+    return calculatedTotalGross - activeLoanDeductionsTotal;
+  }, [calculatedTotalGross, activeLoanDeductionsTotal]);
+
+  const handleOnboardStaff = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const numSalary = parseFloat(formData.get('salary')) || 7500;
+    
+    const newEmpID = generateShortEmployeeID();
+    const fallbackPhoto = `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.get('name'))}&background=00875a&color=fff&size=400`;
+
+    const newEmp = {
+      id: newEmpID,
+      name: formData.get('name'),
+      role: formData.get('role'),
+      dept: formData.get('dept'),
+      rank: formData.get('rank') || 'Junior Staff (Grade 3)',
+      ghanaCardNo: newEmpGhanaCard,
+      passportPhoto: passportPreview || fallbackPhoto,
+      ghanaCardFront: ghanaCardFrontPreview || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
+      ghanaCardBack: ghanaCardBackPreview || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
+      bankName: formData.get('bankName'),
+      bankAccName: formData.get('bankAccName'),
+      bankAccNo: formData.get('bankAccNo'),
+      emergencyName: formData.get('emergencyName'),
+      emergencyPhone: formData.get('emergencyPhone'),
+      email: formData.get('email'),
+      phone: formData.get('phone'),
+      salary: numSalary,
+      formattedSalary: `₵ ${numSalary.toLocaleString()} / mo`,
+      contract: formData.get('contract'),
+      status: 'Active',
+      joined: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+      rating: 4.8,
+      daysPresent: 1,
+      daysLate: 0,
+      daysAbsent: 0,
+      daysOnLeave: 0,
+      attendanceRate: '100%',
+      loansCount: 0,
+      sanctionsCount: 0
+    };
+
+    setStaffList([newEmp, ...staffList]);
+    setShowOnboardModal(false);
+    setPassportPreview(null);
+    setGhanaCardFrontPreview(null);
+    setGhanaCardBackPreview(null);
+    setNewEmpGhanaCard('GHA-');
+    
+    setSuccessMsg(`Successfully onboarded ${newEmp.name} (${newEmp.id}) as ${newEmp.role}! Automatic date and digital ID Tag generated.`);
+    setTimeout(() => setSuccessMsg(''), 4500);
+  };
+
+  const handleLogLeave = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const newLeave = {
+      id: `LV-${400 + leavesList.length + 1}`,
+      employee: formData.get('employee'),
+      type: formData.get('type'),
+      startDate: formData.get('startDate'),
+      endDate: formData.get('endDate'),
+      formattedDates: `${formData.get('startDate')} to ${formData.get('endDate')}`,
+      duration: `${formData.get('duration')} Days`,
+      reason: formData.get('reason'),
+      status: 'Pending Sign-off',
+      approvedBy: 'Pending'
+    };
+    setLeavesList([newLeave, ...leavesList]);
+    setShowLeaveModal(false);
+    setSuccessMsg(`Leave request for ${newLeave.employee} recorded successfully.`);
+    setTimeout(() => setSuccessMsg(''), 4000);
+  };
+
+  const handleRunPayrollSubmit = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const monthYear = formData.get('monthYear');
+
+    const newRun = {
+      id: `PAY-2026-${monthYear.substring(0, 3).toUpperCase()}-${Date.now().toString().slice(-3)}`,
+      monthYear: monthYear,
+      totalStaff: staffList.length,
+      grossAmount: calculatedTotalGross,
+      formattedGross: `₵ ${calculatedTotalGross.toLocaleString()}`,
+      loanDeductions: activeLoanDeductionsTotal,
+      formattedDeductions: `-₵ ${activeLoanDeductionsTotal.toLocaleString()}`,
+      netAmount: calculatedNetDisbursement,
+      formattedNet: `₵ ${calculatedNetDisbursement.toLocaleString()}`,
+      status: 'Pending Finance Sign-off',
+      runDate: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+      runBy: currentUserRole === 'Finance Director' ? 'Finance Director' : 'HR Officer'
+    };
+
+    setPayrollRunsList([newRun, ...payrollRunsList]);
+    setShowPayrollModal(false);
+    setSuccessMsg(`Payroll run for ${monthYear} calculated (Net: ₵${calculatedNetDisbursement.toLocaleString()}) and submitted to Finance for audit.`);
+    setTimeout(() => setSuccessMsg(''), 4500);
+  };
+
+  const handleApprovePayroll = (id) => {
+    if (currentUserRole !== 'Finance Director') {
+      alert("🔒 Access Denied: Only the authorized Finance Officer / Accounting Director can approve or disburse payroll runs.");
+      return;
+    }
+
+    setPayrollRunsList(payrollRunsList.map(run => run.id === id ? { ...run, status: 'Approved & Disbursed' } : run));
+    
+    setLoansList(loansList.map(loan => {
+      if (loan.status === 'Active Amortization' && loan.remainingBal > 0) {
+        const newBal = Math.max(0, loan.remainingBal - loan.monthlyInstallmentNum);
+        return {
+          ...loan,
+          remainingBal: newBal,
+          formattedBal: `₵ ${newBal.toLocaleString()}`,
+          status: newBal === 0 ? 'Fully Repaid' : 'Active Amortization'
+        };
+      }
+      return loan;
+    }));
+
+    setSuccessMsg(`Payroll run ${id} officially approved. Automated loan recovery deducted from employee balances.`);
+    setTimeout(() => setSuccessMsg(''), 4500);
+  };
+
+  const handleRejectPayroll = (id) => {
+    if (currentUserRole !== 'Finance Director') {
+      alert("🔒 Access Denied: Only the authorized Finance Officer / Accounting Director can reject payroll runs.");
+      return;
+    }
+    setPayrollRunsList(payrollRunsList.map(run => run.id === id ? { ...run, status: 'Rejected / Re-audit' } : run));
+    setSuccessMsg(`Payroll run ${id} flagged and returned to HR for re-auditing.`);
+    setTimeout(() => setSuccessMsg(''), 4000);
+  };
+
+  const handleRequestLoan = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const principal = parseFloat(formData.get('principal')) || 0;
+    const term = parseInt(formData.get('term')) || 12;
+    const interest = parseFloat(formData.get('interestRate')) || 0;
+    
+    const monthlyInstallmentNum = Math.round((principal * (1 + interest / 100)) / term);
+    
+    const newLoan = {
+      id: `LN-${700 + loansList.length + 1}`,
+      employee: formData.get('employee'),
+      principal: principal,
+      formattedPrincipal: `₵ ${principal.toLocaleString()}`,
+      term: `${term} Months`,
+      interestRate: `${interest}%`,
+      monthlyInstallmentNum: monthlyInstallmentNum,
+      monthlyInstallment: `₵ ${monthlyInstallmentNum.toLocaleString()} / mo`,
+      remainingBal: principal,
+      formattedBal: `₵ ${principal.toLocaleString()}`,
+      guarantor: formData.get('guarantor'),
+      purpose: formData.get('purpose'),
+      status: 'Pending Underwriting',
+      dateDisbursed: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    };
+    setLoansList([newLoan, ...loansList]);
+    setShowLoanModal(false);
+    setSuccessMsg(`Staff loan request for ${newLoan.employee} logged for underwriting audit.`);
+    setTimeout(() => setSuccessMsg(''), 4000);
+  };
+
+  const handleLogSanction = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const newSanction = {
+      id: `SNC-${900 + sanctionsList.length + 1}`,
+      employee: formData.get('employee'),
+      date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+      infraction: formData.get('infraction'),
+      severity: formData.get('severity'),
+      issuer: 'Louis Kemenyo',
+      notes: formData.get('notes')
+    };
+    setSanctionsList([newSanction, ...sanctionsList]);
+    setShowSanctionModal(false);
+    setSuccessMsg(`Disciplinary sanction recorded for ${newSanction.employee}.`);
+    setTimeout(() => setSuccessMsg(''), 4000);
+  };
+
+  const handleLogAppraisal = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const newAppr = {
+      id: `APR-${500 + appraisalsList.length + 1}`,
+      employee: formData.get('employee'),
+      reviewer: 'Louis Kemenyo',
+      date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+      rating: parseFloat(formData.get('rating')) || 4.5,
+      keyAchievements: formData.get('keyAchievements'),
+      recommendation: formData.get('recommendation')
+    };
+    setAppraisalsList([newAppr, ...appraisalsList]);
+    setShowAppraisalModal(false);
+    setSuccessMsg(`Performance appraisal for ${newAppr.employee} successfully archived.`);
+    setTimeout(() => setSuccessMsg(''), 4000);
+  };
+
+  const openProfile = (emp) => {
+    setSelectedStaffProfile(emp);
+  };
+
+  const triggerPrintIDTag = (emp) => {
+    setPrintableTagEmployee(emp);
+  };
+
+  const executeBrowserPrint = async () => {
+    setIsGeneratingPdf(true);
+    await generateRealPDF('#printable-id-cards-container', `Staff_ID_Badge_${printableTagEmployee?.id ? printableTagEmployee.id : 'EMP'}.pdf`, { orientation: 'l', scale: 3 });
+    setIsGeneratingPdf(false);
+  };
+
+  const filteredStaff = useMemo(() => {
+    return staffList.filter(s => {
+      const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            s.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            s.dept.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            s.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            s.ghanaCardNo.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesDept = filterDept === 'all' || s.dept.toLowerCase() === filterDept.toLowerCase();
+      return matchesSearch && matchesDept;
+    });
+  }, [staffList, searchTerm, filterDept]);
+
+  const filteredAttendanceLogs = useMemo(() => {
+    return attendanceLogsList.filter(l => l.date === attendanceDate);
+  }, [attendanceLogsList, attendanceDate]);
+
+  const attendanceDateStats = useMemo(() => {
+    let present = 0;
+    let late = 0;
+    let absent = 0;
+    let leave = 0;
+
+    filteredAttendanceLogs.forEach(l => {
+      if (l.status.includes('On Time')) present += 1;
+      else if (l.status.includes('Late')) { present += 1; late += 1; }
+      else if (l.status.includes('Absent') || l.status.includes('Suspension')) absent += 1;
+      else if (l.status.includes('Leave')) leave += 1;
+    });
+
+    const total = filteredAttendanceLogs.length;
+    return { present, late, absent, leave, total };
+  }, [filteredAttendanceLogs]);
+
+  const metrics = useMemo(() => {
+    const activeStaff = staffList.filter(s => s.status === 'Active').length;
+    const outstandingLoans = loansList.filter(l => l.status.includes('Active')).reduce((acc, l) => acc + l.remainingBal, 0);
+    return { activeStaff, outstandingLoans };
+  }, [staffList, loansList]);
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: { opacity: 1, transition: { staggerChildren: 0.08 } }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 15 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.3 } }
+  };
+
+  return (
+    <motion.div 
+      variants={containerVariants} 
+      initial="hidden" 
+      animate="show" 
+      style={{ display: 'flex', flexDirection: 'column', gap: '32px', width: '100%', boxSizing: 'border-box' }}
+    >
+      {/* Toast Banner */}
+      <AnimatePresence>
+        {successMsg && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            style={{
+              padding: '16px 24px',
+              backgroundColor: '#10b981',
+              color: 'white',
+              borderRadius: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              boxShadow: '0 10px 25px -5px rgba(16, 185, 129, 0.4)',
+              fontWeight: '700',
+              fontSize: '14px',
+              zIndex: 100
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <CheckCircle2 size={20} />
+              <span>{successMsg}</span>
+            </div>
+            <button 
+              onClick={() => setSuccessMsg('')} 
+              style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', opacity: 0.8 }}
+            >
+              <X size={18} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Top Header & Title */}
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '16px', width: '100%' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+            <span style={{ padding: '6px 12px', borderRadius: '20px', backgroundColor: 'var(--primary-glow)', color: 'var(--primary)', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Users size={12} /> Enterprise Human Resources & Workforce Hub
+            </span>
+            
+            {/* Interactive Role Security Switcher */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'white', border: '1px solid var(--border-dark)', padding: '4px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: '800', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+              <Lock size={12} style={{ color: currentUserRole === 'Finance Director' ? '#10b981' : '#f59e0b' }} />
+              <span style={{ color: 'var(--text-muted)' }}>Simulated Security Role:</span>
+              <button 
+                onClick={() => setCurrentUserRole(currentUserRole === 'Finance Director' ? 'HR Officer' : 'Finance Director')}
+                title="Click to toggle security permissions between HR Officer and Finance Director"
+                style={{ background: currentUserRole === 'Finance Director' ? '#10b981' : '#f59e0b', color: 'white', border: 'none', padding: '2px 10px', borderRadius: '12px', fontSize: '10px', fontWeight: '800', cursor: 'pointer' }}
+              >
+                {currentUserRole} (Click to Switch)
+              </button>
+            </div>
+          </div>
+
+          <h2 style={{ fontSize: '28px', fontWeight: '800', letterSpacing: '-0.5px', color: 'var(--text-main)' }}>Human Capital Management</h2>
+          <p style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: '500', marginTop: '2px' }}>
+            Unified command for employee directory, daily attendance check-ins, leave vaults, automated payroll runs with live loan recoveries, and printable ID badges.
+          </p>
+        </div>
+        
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <motion.button 
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setShowOnboardModal(true)}
+            style={{ 
+              backgroundColor: 'var(--primary)', color: 'white', border: 'none', 
+              padding: '12px 24px', borderRadius: '12px', display: 'flex', 
+              alignItems: 'center', gap: '10px', fontSize: '14px', fontWeight: '700', 
+              cursor: 'pointer', boxShadow: '0 10px 20px -5px rgba(0, 135, 90, 0.4)' 
+            }}
+          >
+            <UserPlus size={20} /> Onboard New Employee
+          </motion.button>
+        </div>
+      </header>
+
+      {/* Executive Metric Cards Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', width: '100%' }}>
+        <div className="glass-card-premium" style={{ padding: '24px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: '#ecfdf5', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Users size={28} />
+          </div>
+          <div style={{ overflow: 'hidden' }}>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>Total Active Workforce</p>
+            <h3 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-main)', marginTop: '4px' }}>
+              {metrics.activeStaff} Staff
+            </h3>
+            <span style={{ fontSize: '12px', color: '#10b981', fontWeight: '700', whiteSpace: 'nowrap' }}>Across 4 core departments</span>
+          </div>
+        </div>
+
+        <div className="glass-card-premium" style={{ padding: '24px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: '#e0e7ff', color: '#4338ca', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Calculator size={28} />
+          </div>
+          <div style={{ overflow: 'hidden' }}>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>Gross Monthly Payroll</p>
+            <h3 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-main)', marginTop: '4px' }}>
+              ₵ {(calculatedTotalGross / 1000).toFixed(1)}k <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-muted)' }}>/ mo</span>
+            </h3>
+            <span style={{ fontSize: '12px', color: '#4338ca', fontWeight: '700', whiteSpace: 'nowrap' }}>Dynamic gross calculation</span>
+          </div>
+        </div>
+
+        <div className="glass-card-premium" style={{ padding: '24px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: '#fffbeb', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Landmark size={28} />
+          </div>
+          <div style={{ overflow: 'hidden' }}>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>Amortized Staff Loans</p>
+            <h3 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-main)', marginTop: '4px' }}>
+              ₵ {(metrics.outstandingLoans / 1000).toLocaleString()}k
+            </h3>
+            <span style={{ fontSize: '12px', color: '#d97706', fontWeight: '700', whiteSpace: 'nowrap' }}>Medium & long term credit</span>
+          </div>
+        </div>
+
+        <div className="glass-card-premium" style={{ padding: '24px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: '#fef2f2', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Clock size={28} />
+          </div>
+          <div style={{ overflow: 'hidden' }}>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>Attendance Rate</p>
+            <h3 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-main)', marginTop: '4px' }}>
+              96.4%
+            </h3>
+            <span style={{ fontSize: '12px', color: '#ef4444', fontWeight: '700', whiteSpace: 'nowrap' }}>Checked in today</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Internal HR Sub-Navigation Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: 'white', padding: '12px 24px', borderRadius: '20px', border: '1px solid var(--border-dark)', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.03)', width: '100%' }}>
+        <nav style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', width: '100%' }}>
+          {[
+            { id: 'directory', label: '👨‍💼 Staff Registry & ID Badges' },
+            { id: 'attendance', label: '⏱️ Daily Attendance Logs' },
+            { id: 'leaves', label: '🏖️ Leave & Vacation Vault' },
+            { id: 'payroll', label: '💳 Monthly Payroll Run' },
+            { id: 'loans', label: '🏦 Staff Loans Ledger' },
+            { id: 'sanctions', label: '⚖️ Sanctions Registry' },
+            { id: 'appraisals', label: '⭐ Performance Appraisals' }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveSubTab(tab.id)}
+              style={{
+                padding: '12px 20px',
+                borderRadius: '14px',
+                border: 'none',
+                fontSize: '14px',
+                fontWeight: activeSubTab === tab.id ? '800' : '600',
+                backgroundColor: activeSubTab === tab.id ? 'var(--primary)' : 'transparent',
+                color: activeSubTab === tab.id ? 'white' : 'var(--text-muted)',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: activeSubTab === tab.id ? '0 8px 20px -6px var(--primary)' : 'none',
+                whiteSpace: 'nowrap',
+                flexShrink: 0
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* ========================================================= */}
+      {/* 1. STAFF REGISTRY & BEAUTIFUL EMPLOYEE ID CARDS */}
+      {/* ========================================================= */}
+      {activeSubTab === 'directory' && (
+        <motion.div variants={containerVariants} initial="hidden" animate="show" style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+            <div style={{ position: 'relative', width: '100%', maxWidth: '380px' }}>
+              <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+              <input 
+                type="text" 
+                placeholder="Search staff by name, ID, Ghana Card..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{ width: '100%', padding: '14px 16px 14px 48px', borderRadius: '14px', border: '1px solid var(--border-dark)', fontSize: '13px', background: '#f8fafc', fontWeight: '500', outline: 'none' }} 
+              />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '700' }}><Filter size={16} /> Filter Dept:</span>
+              <select value={filterDept} onChange={(e) => setFilterDept(e.target.value)} style={{ padding: '10px 16px', borderRadius: '12px', border: '1px solid var(--border-dark)', fontSize: '13px', fontWeight: '700', background: '#f8fafc', color: 'var(--text-main)', cursor: 'pointer' }}>
+                <option value="all">All Departments</option>
+                <option value="Executive Management">Executive Management</option>
+                <option value="Sales & Leasing">Sales & Leasing</option>
+                <option value="Operations & Maintenance">Operations & Maintenance</option>
+                <option value="Finance & Accounts">Finance & Accounts</option>
+                <option value="Compliance & Legal">Compliance & Legal</option>
+                <option value="Security & Surveillance">Security & Surveillance</option>
+              </select>
+            </div>
+          </div>
+
+          {/* BEAUTIFUL PREMIUM EMPLOYEE BADGES GRID */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(310px, 1fr))', gap: '28px' }}>
+            {filteredStaff.map((emp) => (
+              <motion.div 
+                key={emp.id} 
+                variants={itemVariants}
+                whileHover={{ y: -6, boxShadow: '0 25px 50px -12px rgba(0, 135, 90, 0.15)' }}
+                style={{ 
+                  background: 'linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(248,250,252,0.95) 100%)', 
+                  borderRadius: '28px', 
+                  border: '1px solid rgba(0, 135, 90, 0.18)', 
+                  boxShadow: '0 15px 35px -10px rgba(0,0,0,0.08)',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  position: 'relative',
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                {/* Emerald Header Strip with subtle background glow */}
+                <div style={{ height: '95px', background: 'linear-gradient(135deg, #00875a 0%, #004c32 100%)', position: 'relative', padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Building2 size={16} style={{ color: '#6ee7b7' }} />
+                    <span style={{ color: 'white', fontSize: '11px', fontWeight: '900', letterSpacing: '1px', textTransform: 'uppercase', opacity: 0.9 }}>
+                      RealtyOS Hub
+                    </span>
+                  </div>
+                  <span style={{ background: 'rgba(255, 255, 255, 0.25)', backdropFilter: 'blur(8px)', color: 'white', padding: '4px 12px', borderRadius: '14px', fontSize: '12px', fontWeight: '900', letterSpacing: '0.5px', border: '1px solid rgba(255,255,255,0.4)' }}>
+                    {emp.id}
+                  </span>
+                </div>
+
+                {/* Centered Avatar Overlapping Seam */}
+                <div style={{ alignSelf: 'center', marginTop: '-48px', width: '96px', height: '96px', borderRadius: '50%', border: '5px solid white', overflow: 'hidden', background: '#e2e8f0', boxShadow: '0 12px 25px -5px rgba(0, 0, 0, 0.25)', zIndex: 10 }}>
+                  <img src={emp.passportPhoto} alt={emp.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+
+                {/* Employee Card Details */}
+                <div style={{ padding: '16px 28px 24px', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '16px' }}>
+                  <div>
+                    <h3 style={{ fontSize: '22px', fontWeight: '900', color: 'var(--text-main)', margin: '0 0 4px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                      {emp.name}
+                      <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: emp.status === 'Active' ? '#10b981' : '#f59e0b', boxShadow: emp.status === 'Active' ? '0 0 10px #10b981' : 'none' }} title={emp.status} />
+                    </h3>
+                    <span style={{ display: 'inline-block', padding: '4px 14px', background: '#ecfdf5', color: '#00875a', borderRadius: '16px', fontSize: '12px', fontWeight: '800', border: '1px solid #10b98140' }}>
+                      {emp.role}
+                    </span>
+                  </div>
+
+                  {/* Dept & Rank Badges Container */}
+                  <div style={{ width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', padding: '14px', background: 'white', borderRadius: '20px', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                    <div>
+                      <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '2px' }}>Department</span>
+                      <span style={{ fontSize: '13px', fontWeight: '800', color: 'var(--text-main)', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{emp.dept}</span>
+                    </div>
+                    <div style={{ borderLeft: '1px solid rgba(0,0,0,0.06)', paddingLeft: '8px' }}>
+                      <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '2px' }}>Seniority Rank</span>
+                      <span style={{ fontSize: '13px', fontWeight: '800', color: '#4338ca', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{emp.rank}</span>
+                    </div>
+                  </div>
+
+                  <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', padding: '12px 16px', background: '#f1f5f9', borderRadius: '16px', border: '1px solid #e2e8f0', marginTop: 'auto' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Shield size={14} style={{ color: 'var(--primary)' }} />
+                      <span style={{ letterSpacing: '0.5px' }}>{emp.ghanaCardNo}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-main)', fontWeight: '800' }}>
+                      <QrCode size={16} style={{ color: 'var(--primary)' }} /> Secure Tag
+                    </div>
+                  </div>
+
+                  {/* Footer Action Buttons */}
+                  <div style={{ width: '100%', display: 'grid', gridTemplateColumns: '1fr 1.25fr', gap: '10px', marginTop: '4px' }}>
+                    <button
+                      onClick={() => openProfile(emp)}
+                      title="Inspect Full HR Dossier"
+                      style={{ padding: '12px', borderRadius: '16px', background: 'white', border: '1px solid #cbd5e1', color: '#334155', fontSize: '13px', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 10px rgba(0,0,0,0.04)' }}
+                    >
+                      <Eye size={16} style={{ color: 'var(--text-muted)' }} /> Dossier
+                    </button>
+                    <button 
+                      onClick={() => triggerPrintIDTag(emp)}
+                      title="Print Official ID Tag (PDF / PNG)"
+                      style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '12px', borderRadius: '16px', fontSize: '13px', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', boxShadow: '0 8px 20px -4px rgba(0, 135, 90, 0.4)', transition: 'all 0.2s' }}
+                    >
+                      <Printer size={16} /> Print ID Tag
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 2. DAILY ATTENDANCE LOGS TAB (STANDALONE) */}
+      {/* ========================================================= */}
+      {activeSubTab === 'attendance' && (
+        <motion.div variants={containerVariants} initial="hidden" animate="show" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-main)' }}>Daily Workforce Attendance & Shift Timelogs</h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '500', marginTop: '2px' }}>Real-time clock-in timestamps, automated leave detections, and punctuality scoring across corporate and property site locations.</p>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f8fafc', border: '1px solid var(--border-dark)', padding: '6px 14px', borderRadius: '14px' }}>
+                <Calendar size={16} style={{ color: 'var(--text-muted)' }} />
+                <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-muted)' }}>Date:</span>
+                <input 
+                  type="date" 
+                  value={attendanceDate}
+                  onChange={(e) => setAttendanceDate(e.target.value)}
+                  style={{ border: 'none', background: 'transparent', fontSize: '13px', fontWeight: '800', color: 'var(--text-main)', cursor: 'pointer', outline: 'none' }}
+                />
+              </div>
+
+              <button 
+                onClick={handleOpenTakeAttendanceModal} 
+                style={{ padding: '12px 24px', borderRadius: '12px', background: 'var(--primary)', color: 'white', border: 'none', fontWeight: '800', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 10px 20px -5px rgba(0, 135, 90, 0.4)' }}
+              >
+                <Plus size={18} /> Record Daily Attendance Roster Check
+              </button>
+            </div>
+          </div>
+
+          {/* Roster Metrics Banner for Selected Date */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', background: 'white', border: '1px solid var(--border-dark)', padding: '20px', borderRadius: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: '#ecfdf5', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '20px' }}>
+                {attendanceDateStats.present}
+              </div>
+              <div>
+                <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Present (On Time)</span>
+                <span style={{ fontSize: '18px', fontWeight: '800', color: '#10b981', display: 'block' }}>{attendanceDateStats.present} Personnel</span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: '#fffbeb', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '20px' }}>
+                {attendanceDateStats.late}
+              </div>
+              <div>
+                <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Present (Late Arrival)</span>
+                <span style={{ fontSize: '18px', fontWeight: '800', color: '#d97706', display: 'block' }}>{attendanceDateStats.late} Personnel</span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: '#e0e7ff', color: '#4338ca', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '20px' }}>
+                {attendanceDateStats.leave}
+              </div>
+              <div>
+                <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Approved Leave / Rest</span>
+                <span style={{ fontSize: '18px', fontWeight: '800', color: '#4338ca', display: 'block' }}>{attendanceDateStats.leave} Personnel</span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: '#fef2f2', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '20px' }}>
+                {attendanceDateStats.absent}
+              </div>
+              <div>
+                <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Unexcused Absent</span>
+                <span style={{ fontSize: '18px', fontWeight: '800', color: '#ef4444', display: 'block' }}>{attendanceDateStats.absent} Personnel</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="glass-card-premium" style={{ padding: '0', overflowX: 'auto', borderRadius: '24px', width: '100%' }}>
+            {filteredAttendanceLogs.length === 0 ? (
+              <div style={{ padding: '64px 24px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                <Calendar size={48} style={{ opacity: 0.3, marginBottom: '16px' }} />
+                <h4 style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '6px' }}>No Attendance Records Found for Selected Date</h4>
+                <p style={{ fontSize: '14px', maxWidth: '400px', margin: '0 auto 20px' }}>Click the button above to record the daily check-in roster and automatically verify staff leaves.</p>
+                <button 
+                  onClick={handleOpenTakeAttendanceModal}
+                  style={{ padding: '10px 20px', borderRadius: '12px', background: 'var(--primary)', color: 'white', border: 'none', fontWeight: '800', fontSize: '14px', cursor: 'pointer' }}
+                >
+                  Take Attendance Roster
+                </button>
+              </div>
+            ) : (
+              <table style={{ width: '100%', minWidth: '950px', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ background: '#f8fafc', borderBottom: '1px solid var(--border-dark)' }}>
+                    <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Employee & Dept</th>
+                    <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Clock-In Time</th>
+                    <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Clock-Out Time</th>
+                    <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total Hours</th>
+                    <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Punctuality Status</th>
+                    <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'right' }}>Audit Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredAttendanceLogs.map((log, idx) => (
+                    <motion.tr key={log.id} variants={itemVariants} style={{ borderBottom: '1px solid var(--border-dark)', background: idx % 2 === 0 ? 'white' : '#fcfdfd' }}>
+                      <td style={{ padding: '18px 24px' }}>
+                        <span style={{ fontSize: '15px', fontWeight: '800', color: 'var(--text-main)', display: 'block' }}>{log.employee}</span>
+                        <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>{log.dept}</span>
+                      </td>
+                      <td style={{ padding: '18px 24px' }}>
+                        <span style={{ fontSize: '14px', fontWeight: '800', color: log.clockIn.includes('--') ? '#94a3b8' : '#10b981', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <LogIn size={16} /> {log.clockIn}
+                        </span>
+                      </td>
+                      <td style={{ padding: '18px 24px' }}>
+                        <span style={{ fontSize: '14px', fontWeight: '800', color: log.clockOut.includes('--') ? '#94a3b8' : '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <LogOut size={16} /> {log.clockOut}
+                        </span>
+                      </td>
+                      <td style={{ padding: '18px 24px', fontSize: '14px', fontWeight: '800', color: 'var(--primary)' }}>
+                        {log.shiftHours}
+                      </td>
+                      <td style={{ padding: '18px 24px' }}>
+                        <span style={{ 
+                          padding: '6px 12px', 
+                          borderRadius: '20px', 
+                          fontSize: '11px', 
+                          fontWeight: '800',
+                          backgroundColor: log.status.includes('On Time') ? '#ecfdf5' : log.status.includes('Leave') ? '#e0e7ff' : log.status.includes('Late') ? '#fffbeb' : '#fef2f2',
+                          color: log.status.includes('On Time') ? '#10b981' : log.status.includes('Leave') ? '#4338ca' : log.status.includes('Late') ? '#d97706' : '#ef4444',
+                          display: 'inline-block'
+                        }}>
+                          {log.status}
+                        </span>
+                      </td>
+                      <td style={{ padding: '18px 24px', textAlign: 'right', fontSize: '13px', fontWeight: '600', color: 'var(--text-muted)', maxWidth: '220px' }}>
+                        {log.notes}
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {/* Cumulative Punctuality & Attendance Ledger Summary */}
+          <div className="glass-card-premium" style={{ padding: '28px', borderRadius: '24px', width: '100%', marginTop: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+              <BarChart2 size={24} style={{ color: 'var(--primary)' }} />
+              <div>
+                <h4 style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text-main)', margin: 0 }}>Cumulative Workforce Attendance & Punctuality Ledger</h4>
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '500', margin: '2px 0 0' }}>Comprehensive aggregation of days present on time, late arrivals, approved statutory rest, and unexcused absences.</p>
+              </div>
+            </div>
+
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', minWidth: '850px', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ background: '#f8fafc', borderBottom: '1px solid var(--border-dark)' }}>
+                    <th style={{ padding: '14px 20px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Employee & Role</th>
+                    <th style={{ padding: '14px 20px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'center' }}>Days Present (On Time)</th>
+                    <th style={{ padding: '14px 20px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'center' }}>Days Late Arrival</th>
+                    <th style={{ padding: '14px 20px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'center' }}>Days On Approved Leave</th>
+                    <th style={{ padding: '14px 20px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'center' }}>Unexcused Absences</th>
+                    <th style={{ padding: '14px 20px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'right' }}>Overall Punctuality Rate</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {staffList.map((emp, idx) => (
+                    <tr key={emp.id} style={{ borderBottom: '1px solid var(--border-dark)', background: idx % 2 === 0 ? 'white' : '#fcfdfd' }}>
+                      <td style={{ padding: '16px 20px' }}>
+                        <span style={{ fontSize: '15px', fontWeight: '800', color: 'var(--text-main)', display: 'block' }}>{emp.name}</span>
+                        <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>{emp.role}</span>
+                      </td>
+                      <td style={{ padding: '16px 20px', textAlign: 'center', fontSize: '15px', fontWeight: '800', color: '#10b981' }}>
+                        {emp.daysPresent} Days
+                      </td>
+                      <td style={{ padding: '16px 20px', textAlign: 'center', fontSize: '15px', fontWeight: '800', color: emp.daysLate > 0 ? '#d97706' : '#64748b' }}>
+                        {emp.daysLate} Days
+                      </td>
+                      <td style={{ padding: '16px 20px', textAlign: 'center', fontSize: '15px', fontWeight: '800', color: emp.daysOnLeave > 0 ? '#4338ca' : '#64748b' }}>
+                        {emp.daysOnLeave} Days
+                      </td>
+                      <td style={{ padding: '16px 20px', textAlign: 'center', fontSize: '15px', fontWeight: '800', color: emp.daysAbsent > 0 ? '#ef4444' : '#64748b' }}>
+                        {emp.daysAbsent} Days
+                      </td>
+                      <td style={{ padding: '16px 20px', textAlign: 'right', fontSize: '16px', fontWeight: '900', color: parseFloat(emp.attendanceRate) < 90 ? '#ef4444' : 'var(--primary)' }}>
+                        {emp.attendanceRate}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 3. LEAVES & VACATION VAULT TAB */}
+      {/* ========================================================= */}
+      {activeSubTab === 'leaves' && (
+        <motion.div variants={containerVariants} initial="hidden" animate="show" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-main)' }}>Employee Vacation & Leave Vault</h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '500', marginTop: '2px' }}>Review and sign off on annual vacation entitlements, medical leave certificates, and emergency family absences.</p>
+            </div>
+            <button 
+              onClick={() => setShowLeaveModal(true)} 
+              style={{ padding: '12px 20px', borderRadius: '12px', background: 'var(--primary)', color: 'white', border: 'none', fontWeight: '700', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 10px rgba(0, 135, 90, 0.2)' }}
+            >
+              <Plus size={18} /> Log New Leave Request
+            </button>
+          </div>
+
+          <div className="glass-card-premium" style={{ padding: '0', overflowX: 'auto', borderRadius: '24px', width: '100%' }}>
+            <table style={{ width: '100%', minWidth: '950px', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '1px solid var(--border-dark)' }}>
+                  <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Leave Ref & Employee</th>
+                  <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Leave Type</th>
+                  <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Date Range & Duration</th>
+                  <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Reason Summary</th>
+                  <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Approval Status</th>
+                  <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'right' }}>Audit Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {leavesList.map((lv, idx) => (
+                  <motion.tr key={lv.id} variants={itemVariants} style={{ borderBottom: '1px solid var(--border-dark)', background: idx % 2 === 0 ? 'white' : '#fcfdfd' }}>
+                    <td style={{ padding: '18px 24px' }}>
+                      <span style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text-main)', display: 'block' }}>{lv.employee}</span>
+                      <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>Ref: {lv.id}</span>
+                    </td>
+                    <td style={{ padding: '18px 24px' }}>
+                      <span style={{ fontSize: '13px', padding: '4px 10px', background: '#f1f5f9', borderRadius: '8px', fontWeight: '800', color: '#475569' }}>{lv.type}</span>
+                    </td>
+                    <td style={{ padding: '18px 24px' }}>
+                      <span style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text-main)', display: 'block' }}>{lv.formattedDates}</span>
+                      <span style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: '700' }}>Duration: {lv.duration}</span>
+                    </td>
+                    <td style={{ padding: '18px 24px', fontSize: '13px', color: 'var(--text-muted)', fontWeight: '500', maxWidth: '280px' }}>
+                      {lv.reason}
+                    </td>
+                    <td style={{ padding: '18px 24px' }}>
+                      <span style={{ 
+                        padding: '6px 12px', 
+                        borderRadius: '20px', 
+                        fontSize: '11px', 
+                        fontWeight: '800',
+                        backgroundColor: lv.status === 'Approved' ? '#ecfdf5' : '#fffbeb',
+                        color: lv.status === 'Approved' ? '#10b981' : '#d97706',
+                        border: lv.status === 'Approved' ? '1px solid #10b98130' : '1px solid #d9770630',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}>
+                        {lv.status === 'Approved' ? <CheckCircle2 size={14}/> : <Clock size={14}/>}
+                        {lv.status}
+                      </span>
+                    </td>
+                    <td style={{ padding: '18px 24px', textAlign: 'right' }}>
+                      {lv.status === 'Pending Sign-off' && (
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                          <button
+                            onClick={() => {
+                              setLeavesList(leavesList.map(l => l.id === lv.id ? { ...l, status: 'Approved', approvedBy: 'Louis Kemenyo' } : l));
+                              setSuccessMsg(`Approved leave for ${lv.employee}`);
+                              setTimeout(() => setSuccessMsg(''), 3000);
+                            }}
+                            style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', background: '#10b981', color: 'white', fontWeight: '800', fontSize: '12px', cursor: 'pointer' }}
+                          >
+                            Approve
+                          </button>
+                        </div>
+                      )}
+                      {lv.status === 'Approved' && <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700' }}>Audited by {lv.approvedBy}</span>}
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </motion.div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 4. MONTHLY PAYROLL RUN TAB */}
+      {/* ========================================================= */}
+      {activeSubTab === 'payroll' && (
+        <motion.div variants={containerVariants} initial="hidden" animate="show" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-main)' }}>Monthly Salary Calculations & Payroll Runs</h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '500', marginTop: '2px' }}>Automatically compile active workforce salary packages, apply automated loan recovery deductions, and route for Finance Officer sign-off.</p>
+            </div>
+            <button 
+              onClick={() => setShowPayrollModal(true)} 
+              style={{ padding: '12px 24px', borderRadius: '12px', background: 'var(--primary)', color: 'white', border: 'none', fontWeight: '800', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 10px 20px -5px rgba(0, 135, 90, 0.4)' }}
+            >
+              <Play size={18} fill="white" /> Run Monthly Payroll
+            </button>
+          </div>
+
+          <div style={{ background: currentUserRole === 'Finance Director' ? '#ecfdf5' : '#fffbeb', border: currentUserRole === 'Finance Director' ? '1px solid #10b98130' : '1px solid #f59e0b30', padding: '14px 20px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <Lock size={20} style={{ color: currentUserRole === 'Finance Director' ? '#10b981' : '#f59e0b' }} />
+            <div>
+              <span style={{ fontSize: '13px', fontWeight: '800', color: currentUserRole === 'Finance Director' ? '#10b981' : '#d97706', display: 'block' }}>
+                {currentUserRole === 'Finance Director' ? '🔓 Finance Director Access Active: Full Authorization to Sign-off Payouts' : '🔒 HR Officer Mode Active: View Only Permission on Final Payout Approvals'}
+              </span>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                {currentUserRole === 'Finance Director' ? 'You have administrative clearance to approve or reject pending payroll calculations.' : 'Only the authorized Finance Officer / Accounting Director can sign off final bank disbursements.'}
+              </span>
+            </div>
+          </div>
+
+          <div className="glass-card-premium" style={{ padding: '0', overflowX: 'auto', borderRadius: '24px', width: '100%' }}>
+            <table style={{ width: '100%', minWidth: '950px', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '1px solid var(--border-dark)' }}>
+                  <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Payroll Run Ref & Month</th>
+                  <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Headcount</th>
+                  <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Gross Salary Payout</th>
+                  <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Loan Deductions Recovered</th>
+                  <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Net ACH Payout</th>
+                  <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Status</th>
+                  <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'right' }}>Finance Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {payrollRunsList.map((pay, idx) => (
+                  <motion.tr key={pay.id} variants={itemVariants} style={{ borderBottom: '1px solid var(--border-dark)', background: idx % 2 === 0 ? 'white' : '#fcfdfd' }}>
+                    <td style={{ padding: '18px 24px' }}>
+                      <span style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text-main)', display: 'block' }}>{pay.monthYear} Payroll</span>
+                      <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>Ref: {pay.id} • {pay.runDate}</span>
+                    </td>
+                    <td style={{ padding: '18px 24px', fontSize: '15px', fontWeight: '800', color: 'var(--text-main)' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', background: '#f1f5f9', borderRadius: '8px' }}>
+                        <Users size={14} style={{ color: 'var(--primary)' }} /> {pay.totalStaff} Personnel
+                      </span>
+                    </td>
+                    <td style={{ padding: '18px 24px', fontSize: '16px', fontWeight: '800', color: 'var(--text-main)' }}>
+                      {pay.formattedGross}
+                    </td>
+                    <td style={{ padding: '18px 24px', fontSize: '15px', fontWeight: '800', color: '#ef4444' }}>
+                      {pay.formattedDeductions}
+                    </td>
+                    <td style={{ padding: '18px 24px', fontSize: '18px', fontWeight: '900', color: 'var(--primary)' }}>
+                      {pay.formattedNet}
+                    </td>
+                    <td style={{ padding: '18px 24px' }}>
+                      <span style={{ 
+                        padding: '6px 12px', 
+                        borderRadius: '20px', 
+                        fontSize: '11px', 
+                        fontWeight: '800',
+                        backgroundColor: pay.status === 'Approved & Disbursed' ? '#ecfdf5' : pay.status === 'Rejected / Re-audit' ? '#fef2f2' : '#fffbeb',
+                        color: pay.status === 'Approved & Disbursed' ? '#10b981' : pay.status === 'Rejected / Re-audit' ? '#ef4444' : '#d97706',
+                        display: 'inline-block'
+                      }}>
+                        {pay.status}
+                      </span>
+                    </td>
+                    <td style={{ padding: '18px 24px', textAlign: 'right' }}>
+                      {pay.status === 'Pending Finance Sign-off' ? (
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                          <button
+                            onClick={() => handleApprovePayroll(pay.id)}
+                            title={currentUserRole === 'Finance Director' ? "Approve & Schedule ACH Payout" : "🔒 Only authorized Finance Officers can approve"}
+                            style={{ padding: '8px 14px', borderRadius: '10px', border: 'none', background: currentUserRole === 'Finance Director' ? '#10b981' : '#cbd5e1', color: 'white', fontWeight: '800', fontSize: '12px', cursor: currentUserRole === 'Finance Director' ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: '4px' }}
+                          >
+                            <Check size={14} /> Approve
+                          </button>
+                          <button
+                            onClick={() => handleRejectPayroll(pay.id)}
+                            title={currentUserRole === 'Finance Director' ? "Reject & Flag for Re-audit" : "🔒 Only authorized Finance Officers can reject"}
+                            style={{ padding: '8px 14px', borderRadius: '10px', border: 'none', background: currentUserRole === 'Finance Director' ? '#ef4444' : '#cbd5e1', color: 'white', fontWeight: '800', fontSize: '12px', cursor: currentUserRole === 'Finance Director' ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: '4px' }}
+                          >
+                            <X size={14} /> Reject
+                          </button>
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700' }}>Audit Complete</span>
+                      )}
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </motion.div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 5. STAFF LOANS TAB */}
+      {/* ========================================================= */}
+      {activeSubTab === 'loans' && (
+        <motion.div variants={containerVariants} initial="hidden" animate="show" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-main)' }}>Amortized Staff Loans & Long-Term Credit Ledger</h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '500', marginTop: '2px' }}>Medium to long-term employee credit structured over fixed terms with guarantor verification and automated payroll deductions.</p>
+            </div>
+            <button 
+              onClick={() => setShowLoanModal(true)} 
+              style={{ padding: '12px 20px', borderRadius: '12px', background: 'var(--primary)', color: 'white', border: 'none', fontWeight: '700', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 10px rgba(0, 135, 90, 0.2)' }}
+            >
+              <Plus size={18} /> Request Staff Loan
+            </button>
+          </div>
+
+          <div className="glass-card-premium" style={{ padding: '0', overflowX: 'auto', borderRadius: '24px', width: '100%' }}>
+            <table style={{ width: '100%', minWidth: '950px', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '1px solid var(--border-dark)' }}>
+                  <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Loan Ref & Employee</th>
+                  <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Principal Amount</th>
+                  <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Term & Rate</th>
+                  <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Monthly Installment</th>
+                  <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Remaining Bal</th>
+                  <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Guarantor & Purpose</th>
+                  <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'right' }}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loansList.map((ln, idx) => (
+                  <motion.tr key={ln.id} variants={itemVariants} style={{ borderBottom: '1px solid var(--border-dark)', background: idx % 2 === 0 ? 'white' : '#fcfdfd' }}>
+                    <td style={{ padding: '18px 24px' }}>
+                      <span style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text-main)', display: 'block' }}>{ln.employee}</span>
+                      <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>Ref: {ln.id} • Disbursed {ln.dateDisbursed}</span>
+                    </td>
+                    <td style={{ padding: '18px 24px', fontSize: '16px', fontWeight: '800', color: 'var(--primary)' }}>
+                      {ln.formattedPrincipal}
+                    </td>
+                    <td style={{ padding: '18px 24px' }}>
+                      <span style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text-main)', display: 'block' }}>{ln.term}</span>
+                      <span style={{ fontSize: '12px', color: '#d97706', fontWeight: '700' }}>APR: {ln.interestRate}</span>
+                    </td>
+                    <td style={{ padding: '18px 24px', fontSize: '15px', fontWeight: '800', color: 'var(--text-main)' }}>
+                      {ln.monthlyInstallment}
+                    </td>
+                    <td style={{ padding: '18px 24px', fontSize: '16px', fontWeight: '800', color: ln.remainingBal > 0 ? '#ef4444' : '#10b981' }}>
+                      {ln.formattedBal}
+                    </td>
+                    <td style={{ padding: '18px 24px', fontSize: '13px', color: 'var(--text-muted)', fontWeight: '500', maxWidth: '240px' }}>
+                      <span style={{ fontWeight: '800', color: '#475569', display: 'block' }}>Guarantor: {ln.guarantor}</span>
+                      <span>{ln.purpose}</span>
+                    </td>
+                    <td style={{ padding: '18px 24px', textAlign: 'right' }}>
+                      <span style={{ 
+                        padding: '6px 12px', 
+                        borderRadius: '20px', 
+                        fontSize: '11px', 
+                        fontWeight: '800',
+                        backgroundColor: ln.status === 'Fully Repaid' ? '#ecfdf5' : ln.status.includes('Active') ? '#e0e7ff' : '#fffbeb',
+                        color: ln.status === 'Fully Repaid' ? '#10b981' : ln.status.includes('Active') ? '#4338ca' : '#d97706',
+                        display: 'inline-block'
+                      }}>
+                        {ln.status}
+                      </span>
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </motion.div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 6. SANCTIONS & 7. APPRAISALS */}
+      {/* ========================================================= */}
+      {activeSubTab === 'sanctions' && (
+        <motion.div variants={containerVariants} initial="hidden" animate="show" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+            <h3 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-main)' }}>Disciplinary Sanctions & Warnings Registry</h3>
+            <button 
+              onClick={() => setShowSanctionModal(true)} 
+              style={{ padding: '12px 20px', borderRadius: '12px', background: '#ef4444', color: 'white', border: 'none', fontWeight: '700', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 10px rgba(239, 68, 68, 0.2)' }}
+            >
+              <Plus size={18} /> Record Disciplinary Action
+            </button>
+          </div>
+
+          <div className="glass-card-premium" style={{ padding: '0', overflowX: 'auto', borderRadius: '24px', width: '100%' }}>
+            <table style={{ width: '100%', minWidth: '950px', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '1px solid var(--border-dark)' }}>
+                  <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Ref & Date</th>
+                  <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Employee</th>
+                  <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Infraction Details</th>
+                  <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Severity / Penalty</th>
+                  <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Incident Audit Notes</th>
+                  <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'right' }}>Logged By</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sanctionsList.map((sn, idx) => (
+                  <motion.tr key={sn.id} variants={itemVariants} style={{ borderBottom: '1px solid var(--border-dark)', background: idx % 2 === 0 ? 'white' : '#fcfdfd' }}>
+                    <td style={{ padding: '18px 24px' }}>
+                      <span style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text-main)', display: 'block' }}>{sn.id}</span>
+                      <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>{sn.date}</span>
+                    </td>
+                    <td style={{ padding: '18px 24px', fontSize: '15px', fontWeight: '800', color: 'var(--text-main)' }}>
+                      {sn.employee}
+                    </td>
+                    <td style={{ padding: '18px 24px', fontSize: '14px', fontWeight: '800', color: '#ef4444' }}>
+                      {sn.infraction}
+                    </td>
+                    <td style={{ padding: '18px 24px' }}>
+                      <span style={{ padding: '4px 10px', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '8px', fontSize: '12px', fontWeight: '800', color: '#ef4444' }}>
+                        {sn.severity}
+                      </span>
+                    </td>
+                    <td style={{ padding: '18px 24px', fontSize: '13px', color: 'var(--text-muted)', fontWeight: '500', maxWidth: '280px' }}>
+                      {sn.notes}
+                    </td>
+                    <td style={{ padding: '18px 24px', textAlign: 'right', fontSize: '13px', fontWeight: '700', color: 'var(--text-muted)' }}>
+                      {sn.issuer}
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </motion.div>
+      )}
+
+      {activeSubTab === 'appraisals' && (
+        <motion.div variants={containerVariants} initial="hidden" animate="show" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+            <h3 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-main)' }}>Bi-Annual Performance Appraisals & KPI Reviews</h3>
+            <button 
+              onClick={() => setShowAppraisalModal(true)} 
+              style={{ padding: '12px 20px', borderRadius: '12px', background: 'var(--primary)', color: 'white', border: 'none', fontWeight: '700', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 10px rgba(0, 135, 90, 0.2)' }}
+            >
+              <Plus size={18} /> Record Employee Review
+            </button>
+          </div>
+
+          <div className="glass-card-premium" style={{ padding: '0', overflowX: 'auto', borderRadius: '24px', width: '100%' }}>
+            <table style={{ width: '100%', minWidth: '950px', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '1px solid var(--border-dark)' }}>
+                  <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Ref & Employee</th>
+                  <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>KPI Score</th>
+                  <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Key Accomplishments</th>
+                  <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Promotion / Bonus Recommendation</th>
+                  <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'right' }}>Review Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {appraisalsList.map((ap, idx) => (
+                  <motion.tr key={ap.id} variants={itemVariants} style={{ borderBottom: '1px solid var(--border-dark)', background: idx % 2 === 0 ? 'white' : '#fcfdfd' }}>
+                    <td style={{ padding: '18px 24px' }}>
+                      <span style={{ fontSize: '15px', fontWeight: '800', color: 'var(--text-main)', display: 'block' }}>{ap.employee}</span>
+                      <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>Reviewer: {ap.reviewer}</span>
+                    </td>
+                    <td style={{ padding: '18px 24px' }}>
+                      <span style={{ fontSize: '15px', fontWeight: '800', color: '#d97706', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Star size={16} fill="#f59e0b" color="#f59e0b" /> {ap.rating} / 5.0
+                      </span>
+                    </td>
+                    <td style={{ padding: '18px 24px', fontSize: '13px', color: 'var(--text-main)', fontWeight: '600', maxWidth: '300px' }}>
+                      {ap.keyAchievements}
+                    </td>
+                    <td style={{ padding: '18px 24px', fontSize: '13px', color: 'var(--primary)', fontWeight: '700', maxWidth: '250px' }}>
+                      {ap.recommendation}
+                    </td>
+                    <td style={{ padding: '18px 24px', textAlign: 'right', fontSize: '13px', fontWeight: '700', color: 'var(--text-muted)' }}>
+                      {ap.date}
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </motion.div>
+      )}
+
+      {/* ========================================================= */}
+      {/* MODAL: ONBOARD NEW EMPLOYEE */}
+      {/* ========================================================= */}
+      <AnimatePresence>
+        {showOnboardModal && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px', boxSizing: 'border-box' }}>
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              style={{ background: '#f8fafc', borderRadius: '32px', width: '980px', maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 35px 60px -15px rgba(0,0,0,0.35)', display: 'flex', flexDirection: 'column', border: '1px solid rgba(255,255,255,0.4)', boxSizing: 'border-box' }}
+            >
+              {/* MODAL HEADER BANNER */}
+              <div style={{ padding: '36px 40px', background: 'linear-gradient(135deg, #00875a 0%, #022c1e 100%)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '4px solid #10b981', flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
+                  <div style={{ width: '56px', height: '56px', borderRadius: '18px', background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#34d399', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)' }}>
+                    <UserPlus size={28} />
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: '26px', fontWeight: '900', margin: 0, letterSpacing: '-0.5px', color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      Onboard New Employee Dossier <span style={{ fontSize: '11px', background: '#10b981', color: 'white', padding: '4px 10px', borderRadius: '20px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1px' }}>HR Portal</span>
+                    </h3>
+                    <p style={{ fontSize: '13px', color: '#a7f3d0', fontWeight: '600', margin: '4px 0 0', opacity: 0.9 }}>
+                      Complete professional onboarding, biometric credential registration, and auto-generate staff ID badges.
+                    </p>
+                  </div>
+                </div>
+                <button onClick={() => setShowOnboardModal(false)} style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)', width: '42px', height: '42px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.25)'} onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}>
+                  <X size={22} />
+                </button>
+              </div>
+
+              {/* FORM BODY */}
+              <form onSubmit={handleOnboardStaff} style={{ display: 'flex', flexDirection: 'column', gap: '28px', padding: '36px 40px', boxSizing: 'border-box' }}>
+                
+                {/* SECTION 1: BIOMETRIC FILES UPLOAD CONTAINER */}
+                <div style={{ background: 'white', borderRadius: '24px', border: '1px solid #cbd5e1', padding: '32px', boxShadow: '0 10px 25px -10px rgba(0,0,0,0.05)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px', borderBottom: '1px solid #f1f5f9', paddingBottom: '16px' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: '#ecfdf5', color: '#00875a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '14px' }}>1</div>
+                    <h4 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'var(--text-main)' }}>Biometric Identification & Card Scans</h4>
+                    <span style={{ marginLeft: 'auto', fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>Used for official access pass printing</span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }}>
+                    {/* Passport Upload */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', background: '#f8fafc', padding: '20px', borderRadius: '20px', border: '1px solid #e2e8f0' }}>
+                      <span style={{ fontSize: '13px', fontWeight: '800', color: 'var(--text-main)' }}>Employee Passport Scan</span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '-8px' }}>Standard 1:1 ratio square/circle</span>
+                      <label style={{ width: '130px', height: '130px', borderRadius: '50%', border: '3px dashed #00875a', background: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', position: 'relative', transition: '0.2s', boxShadow: '0 8px 20px rgba(0,135,90,0.15)' }}>
+                        {passportPreview ? (
+                          <img src={passportPreview} alt="Passport Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '12px', textAlign: 'center' }}>
+                            <Camera size={32} style={{ color: '#00875a', marginBottom: '6px' }} />
+                            <span style={{ fontSize: '12px', fontWeight: '800', color: '#00875a' }}>Select Photo</span>
+                          </div>
+                        )}
+                        <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, setPassportPreview)} style={{ display: 'none' }} />
+                      </label>
+                    </div>
+
+                    {/* Ghana Card Front Upload */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', background: '#f8fafc', padding: '20px', borderRadius: '20px', border: '1px solid #e2e8f0' }}>
+                      <span style={{ fontSize: '13px', fontWeight: '800', color: 'var(--text-main)' }}>Ghana Card (Front Scan)</span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '-8px' }}>National Identity Verification</span>
+                      <label style={{ width: '100%', height: '130px', borderRadius: '18px', border: '2px dashed #64748b', background: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', position: 'relative', transition: '0.2s', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+                        {ghanaCardFrontPreview ? (
+                          <img src={ghanaCardFrontPreview} alt="Ghana Card Front" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '12px', textAlign: 'center' }}>
+                            <UploadCloud size={32} style={{ color: '#64748b', marginBottom: '6px' }} />
+                            <span style={{ fontSize: '12px', fontWeight: '800', color: '#334155' }}>Upload Front ID</span>
+                          </div>
+                        )}
+                        <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, setGhanaCardFrontPreview)} style={{ display: 'none' }} />
+                      </label>
+                    </div>
+
+                    {/* Ghana Card Back Upload */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', background: '#f8fafc', padding: '20px', borderRadius: '20px', border: '1px solid #e2e8f0' }}>
+                      <span style={{ fontSize: '13px', fontWeight: '800', color: 'var(--text-main)' }}>Ghana Card (Back Scan)</span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '-8px' }}>Includes Barcode & Serial</span>
+                      <label style={{ width: '100%', height: '130px', borderRadius: '18px', border: '2px dashed #64748b', background: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', position: 'relative', transition: '0.2s', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+                        {ghanaCardBackPreview ? (
+                          <img src={ghanaCardBackPreview} alt="Ghana Card Back" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '12px', textAlign: 'center' }}>
+                            <UploadCloud size={32} style={{ color: '#64748b', marginBottom: '6px' }} />
+                            <span style={{ fontSize: '12px', fontWeight: '800', color: '#334155' }}>Upload Back ID</span>
+                          </div>
+                        )}
+                        <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, setGhanaCardBackPreview)} style={{ display: 'none' }} />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* SECTION 2: PERSONAL IDENTITY & CREDENTIALS */}
+                <div style={{ background: 'white', borderRadius: '24px', border: '1px solid #cbd5e1', padding: '32px', boxShadow: '0 10px 25px -10px rgba(0,0,0,0.05)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px', borderBottom: '1px solid #f1f5f9', paddingBottom: '16px' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: '#ecfdf5', color: '#00875a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '14px' }}>2</div>
+                    <h4 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'var(--text-main)' }}>Personal Identity & Contact Information</h4>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px' }}>Full Legal Name</label>
+                      <input type="text" name="name" required placeholder="e.g. Osei Tutu" style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: '600', outline: 'none', background: '#f8fafc', boxSizing: 'border-box' }} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px' }}>Ghana Card PIN / National ID</label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={newEmpGhanaCard} 
+                        onChange={handleGhanaCardInputChange} 
+                        placeholder="GHA-718293819-2" 
+                        style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: '800', color: 'var(--primary)', outline: 'none', background: '#ecfdf5', boxSizing: 'border-box', letterSpacing: '0.5px' }} 
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px' }}>Corporate Email Address</label>
+                      <input type="email" name="email" required placeholder="e.g. osei@realtyos.com" style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: '600', outline: 'none', background: '#f8fafc', boxSizing: 'border-box' }} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px' }}>Direct Phone Contact</label>
+                      <input type="text" name="phone" required placeholder="e.g. +233 24 123 4567" style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: '600', outline: 'none', background: '#f8fafc', boxSizing: 'border-box' }} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* SECTION 3: ROLE PLACEMENT & COMPENSATION */}
+                <div style={{ background: 'white', borderRadius: '24px', border: '1px solid #cbd5e1', padding: '32px', boxShadow: '0 10px 25px -10px rgba(0,0,0,0.05)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px', borderBottom: '1px solid #f1f5f9', paddingBottom: '16px' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: '#ecfdf5', color: '#00875a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '14px' }}>3</div>
+                    <h4 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'var(--text-main)' }}>Professional Placement & Monthly Compensation</h4>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px' }}>Assign Department</label>
+                      <select name="dept" style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: '600', outline: 'none', background: '#f8fafc', boxSizing: 'border-box' }}>
+                        <option value="Executive Management">Executive Management</option>
+                        <option value="Sales & Leasing">Sales & Leasing</option>
+                        <option value="Operations & Maintenance">Operations & Maintenance</option>
+                        <option value="Finance & Accounts">Finance & Accounts</option>
+                        <option value="Compliance & Legal">Compliance & Legal</option>
+                        <option value="Security & Surveillance">Security & Surveillance</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px' }}>Official Job Title / Role</label>
+                      <input type="text" name="role" required placeholder="e.g. Senior Property Manager" style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: '600', outline: 'none', background: '#f8fafc', boxSizing: 'border-box' }} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px' }}>Staff Rank & Seniority Grade</label>
+                      <select name="rank" style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: '600', outline: 'none', background: '#f8fafc', boxSizing: 'border-box' }}>
+                        <option value="Junior Staff (Grade 3)">Junior Staff (Grade 3)</option>
+                        <option value="Senior Staff (Grade 2)">Senior Staff (Grade 2)</option>
+                        <option value="Executive Staff (Grade 1)">Executive Staff (Grade 1)</option>
+                        <option value="Subcontractor / Temporary">Subcontractor / Temporary</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px' }}>Gross Monthly Compensation (GHS ₵)</label>
+                      <input type="number" name="salary" required defaultValue={7500} style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid #cbd5e1', fontSize: '15px', fontWeight: '800', color: '#00875a', outline: 'none', background: '#f8fafc', boxSizing: 'border-box' }} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px' }}>Employment Contract Setup</label>
+                      <select name="contract" style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: '600', outline: 'none', background: '#f8fafc', boxSizing: 'border-box' }}>
+                        <option value="Permanent Full-time">Permanent Full-time</option>
+                        <option value="Annual Contract">Annual Contract</option>
+                        <option value="Temporary / Subcontractor">Temporary / Subcontractor</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* SECTION 4: FINANCIAL DEPOSIT & EMERGENCY CONTACTS */}
+                <div style={{ background: 'white', borderRadius: '24px', border: '1px solid #cbd5e1', padding: '32px', boxShadow: '0 10px 25px -10px rgba(0,0,0,0.05)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px', borderBottom: '1px solid #f1f5f9', paddingBottom: '16px' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: '#ecfdf5', color: '#00875a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '14px' }}>4</div>
+                    <h4 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'var(--text-main)' }}>Direct Deposit ACH & Emergency Backup</h4>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px' }}>Destination Bank Name</label>
+                      <select name="bankName" style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: '600', outline: 'none', background: '#f8fafc', boxSizing: 'border-box' }}>
+                        <optgroup label="Major Commercial Banks">
+                          <option value="Ecobank Ghana PLC">Ecobank Ghana PLC</option>
+                          <option value="GCB Bank PLC">GCB Bank PLC</option>
+                          <option value="Stanbic Bank Ghana Ltd">Stanbic Bank Ghana Ltd</option>
+                          <option value="Absa Bank Ghana PLC">Absa Bank Ghana PLC</option>
+                          <option value="Fidelity Bank Ghana Ltd">Fidelity Bank Ghana Ltd</option>
+                          <option value="Consolidated Bank Ghana (CBG)">Consolidated Bank Ghana (CBG)</option>
+                          <option value="Access Bank Ghana PLC">Access Bank Ghana PLC</option>
+                          <option value="Standard Chartered Bank Ghana PLC">Standard Chartered Bank Ghana PLC</option>
+                          <option value="Zenith Bank Ghana Ltd">Zenith Bank Ghana Ltd</option>
+                          <option value="Guaranty Trust Bank (GTBank) Ghana">Guaranty Trust Bank (GTBank) Ghana</option>
+                          <option value="United Bank for Africa (UBA) Ghana">United Bank for Africa (UBA) Ghana</option>
+                          <option value="CalBank PLC">CalBank PLC</option>
+                          <option value="Agricultural Development Bank (ADB) PLC">Agricultural Development Bank (ADB) PLC</option>
+                          <option value="Republic Bank Ghana PLC">Republic Bank Ghana PLC</option>
+                          <option value="Prudential Bank Ltd">Prudential Bank Ltd</option>
+                          <option value="FBNBank Ghana Ltd">FBNBank Ghana Ltd</option>
+                          <option value="Bank of Africa Ghana Ltd">Bank of Africa Ghana Ltd</option>
+                          <option value="First Atlantic Bank Ltd">First Atlantic Bank Ltd</option>
+                          <option value="Societe Generale Ghana PLC">Societe Generale Ghana PLC</option>
+                          <option value="OmniBSIC Bank Ghana Ltd">OmniBSIC Bank Ghana Ltd</option>
+                          <option value="National Investment Bank (NIB)">National Investment Bank (NIB)</option>
+                        </optgroup>
+                        <optgroup label="Savings & Loans / Microfinance / Rural Banks">
+                          <option value="Best Point Savings & Loans Ltd">Best Point Savings & Loans Ltd</option>
+                          <option value="Letshego Savings & Loans">Letshego Savings & Loans</option>
+                          <option value="Opportunity International Savings & Loans">Opportunity International Savings & Loans</option>
+                          <option value="Bayport Financial Services">Bayport Financial Services</option>
+                          <option value="Izwe Savings & Loans">Izwe Savings & Loans</option>
+                          <option value="Pan-African Savings & Loans">Pan-African Savings & Loans</option>
+                          <option value="Bond Savings & Loans">Bond Savings & Loans</option>
+                          <option value="Multi Credit Savings & Loans">Multi Credit Savings & Loans</option>
+                          <option value="Amenfiman Rural Bank">Amenfiman Rural Bank</option>
+                          <option value="Atwima Kwanwoma Rural Bank">Atwima Kwanwoma Rural Bank</option>
+                          <option value="Juaben Rural Bank">Juaben Rural Bank</option>
+                          <option value="Fiaseman Rural Bank">Fiaseman Rural Bank</option>
+                        </optgroup>
+                        <optgroup label="Mobile Money & Fintech / Digital Wallets">
+                          <option value="MTN Mobile Money (MoMo)">MTN Mobile Money (MoMo)</option>
+                          <option value="Telecel Cash (Vodafone Cash)">Telecel Cash (Vodafone Cash)</option>
+                          <option value="AT Money (AirtelTigo)">AT Money (AirtelTigo)</option>
+                          <option value="Zeepay Ghana">Zeepay Ghana</option>
+                        </optgroup>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px' }}>Bank Account Beneficiary Name</label>
+                      <input type="text" name="bankAccName" required placeholder="e.g. Osei Tutu" style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: '600', outline: 'none', background: '#f8fafc', boxSizing: 'border-box' }} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px' }}>Bank Account Number</label>
+                      <input type="text" name="bankAccNo" required placeholder="e.g. 1029384758102" style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: '600', outline: 'none', background: '#f8fafc', boxSizing: 'border-box' }} />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', background: '#fff1f2', padding: '24px', borderRadius: '20px', border: '1px solid #fecdd3' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '900', color: '#9f1239', marginBottom: '8px' }}>🚨 Emergency Contact Name & Relation</label>
+                      <input type="text" name="emergencyName" required placeholder="e.g. Grace Tutu (Wife)" style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid #fca5a5', fontSize: '14px', fontWeight: '700', outline: 'none', background: 'white', boxSizing: 'border-box', color: '#881337' }} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '900', color: '#9f1239', marginBottom: '8px' }}>Emergency Contact Phone Number</label>
+                      <input type="text" name="emergencyPhone" required placeholder="e.g. +233 20 999 1122" style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid #fca5a5', fontSize: '14px', fontWeight: '700', outline: 'none', background: 'white', boxSizing: 'border-box', color: '#881337' }} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* MODAL FOOTER BUTTONS */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '16px', marginTop: '16px' }}>
+                  <button 
+                    type="button" 
+                    onClick={() => setShowOnboardModal(false)}
+                    style={{ padding: '16px 32px', borderRadius: '16px', border: '1px solid #cbd5e1', background: 'white', color: '#334155', fontWeight: '800', fontSize: '15px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#f1f5f9'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                  >
+                    Cancel Dossier
+                  </button>
+                  <button 
+                    type="submit"
+                    style={{ background: 'linear-gradient(135deg, #00875a 0%, #023825 100%)', color: 'white', border: 'none', padding: '16px 40px', borderRadius: '16px', fontSize: '15px', fontWeight: '800', cursor: 'pointer', boxShadow: '0 12px 25px -5px rgba(0, 135, 90, 0.4)', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '10px' }}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                  >
+                    <UserPlus size={20} /> Commit Dossier & Auto-Generate Digital ID Tag
+                  </button>
+                </div>
+
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ========================================================= */}
+      {/* MODAL: PRINT OFFICIAL EMPLOYEE ID TAG PREVIEW */}
+      {/* ========================================================= */}
+      <AnimatePresence>
+        {printableTagEmployee && (
+          <div className="print-modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200, padding: '20px' }}>
+            <motion.div 
+              className="print-modal-content"
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              style={{ background: '#ffffff', padding: '40px', borderRadius: '36px', width: '860px', maxWidth: '95vw', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 30px 60px -15px rgba(0,0,0,0.4)', display: 'flex', flexDirection: 'column', alignItems: 'center', border: '1px solid rgba(255,255,255,0.2)' }}
+            >
+              <div className="no-print" style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', borderBottom: '1px solid #f1f5f9', paddingBottom: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '44px', height: '44px', borderRadius: '14px', background: 'var(--primary-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
+                    <Printer size={22} />
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-main)', margin: 0 }}>Official ID Badge (Front & Back)</h3>
+                    <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '600' }}>CR80 Standard Personnel Access Credentials</span>
+                  </div>
+                </div>
+                <button onClick={() => setPrintableTagEmployee(null)} style={{ background: '#f1f5f9', border: 'none', width: '38px', height: '38px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', cursor: 'pointer', transition: '0.2s' }}>
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* DUAL CARD CONTAINER (FRONT & BACK) */}
+              <div id="printable-id-cards-container" style={{ display: 'flex', flexWrap: 'wrap', gap: '32px', justifyContent: 'center', width: '100%' }}>
+                
+                {/* --- FRONT CARD --- */}
+                <div id="printable-id-card-front" className="printable-card-unit" style={{ width: '360px', minHeight: '560px', borderRadius: '28px', background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)', border: '2px solid #cbd5e1', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.22)', overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative', boxSizing: 'border-box' }}>
+                  {/* Background Watermark Crest */}
+                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', opacity: 0.03, pointerEvents: 'none', zIndex: 1 }}>
+                    <Building2 size={280} color="#00875a" />
+                  </div>
+
+                  {/* Deep Emerald Header Banner */}
+                  <div style={{ padding: '26px 24px 52px', background: 'linear-gradient(135deg, #00875a 0%, #023825 100%)', color: 'white', position: 'relative', borderBottom: '4px solid #10b981', zIndex: 2 }}>
+                    <div style={{ position: 'absolute', top: '16px', right: '16px', display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255,255,255,0.2)', padding: '4px 10px', borderRadius: '20px', backdropFilter: 'blur(4px)' }}>
+                      <ShieldCheck size={14} color="#38bdf8" />
+                      <span style={{ fontSize: '10px', fontWeight: '800', color: '#e0f2fe', letterSpacing: '0.5px' }}>SECURE</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center', marginTop: '4px' }}>
+                      <Building2 size={24} color="#34d399" />
+                      <h4 style={{ margin: 0, fontSize: '20px', fontWeight: '900', letterSpacing: '2px', textTransform: 'uppercase' }}>REALTYOS PLAZA</h4>
+                    </div>
+                    <span style={{ fontSize: '10px', fontWeight: '700', color: '#a7f3d0', letterSpacing: '1px', display: 'block', marginTop: '4px', textAlign: 'center', opacity: 0.9 }}>
+                      STAFF IDENTIFICATION & ACCESS CREDENTIAL
+                    </span>
+                  </div>
+
+                  {/* Centered Avatar with Verification Badge */}
+                  <div style={{ alignSelf: 'center', marginTop: '-56px', position: 'relative', zIndex: 10 }}>
+                    <div style={{ width: '112px', height: '112px', borderRadius: '24px', border: '4px solid white', overflow: 'hidden', background: '#e2e8f0', boxShadow: '0 12px 25px rgba(0,0,0,0.18)', position: 'relative' }}>
+                      <img src={printableTagEmployee.passportPhoto} alt={printableTagEmployee.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                    <div style={{ position: 'absolute', bottom: '-4px', right: '-4px', background: '#10b981', border: '3px solid white', borderRadius: '50%', padding: '6px', color: 'white', boxShadow: '0 4px 10px rgba(16,185,129,0.4)' }} title="Verified Active Personnel">
+                      <Check size={16} strokeWidth={3} />
+                    </div>
+                  </div>
+
+                  {/* Employee Name, Titles & Identification Metadata */}
+                  <div style={{ padding: '20px 24px 28px', textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 5 }}>
+                    <h3 style={{ fontSize: '24px', fontWeight: '900', color: 'var(--text-main)', margin: '0 0 4px', letterSpacing: '-0.5px' }}>
+                      {printableTagEmployee.name}
+                    </h3>
+                    <span style={{ fontSize: '15px', fontWeight: '800', color: '#00875a', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px', display: 'block' }}>
+                      {printableTagEmployee.role}
+                    </span>
+                    
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '22px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                      <span style={{ padding: '5px 14px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '20px', fontSize: '11px', fontWeight: '800', color: '#334155', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        {printableTagEmployee.dept}
+                      </span>
+                      <span style={{ padding: '5px 14px', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '20px', fontSize: '11px', fontWeight: '800', color: '#059669', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        {printableTagEmployee.rank ? printableTagEmployee.rank.split('(')[0].trim() : 'Staff'}
+                      </span>
+                    </div>
+
+                    {/* Identification Card Grid (No Emergency Contact) */}
+                    <div style={{ width: '100%', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '20px', padding: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', textAlign: 'left', marginBottom: '24px', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)' }}>
+                      <div>
+                        <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '800', display: 'block', textTransform: 'uppercase' }}>Emp ID No.</span>
+                        <span style={{ fontSize: '15px', color: 'var(--text-main)', fontWeight: '900', letterSpacing: '1px' }}>{printableTagEmployee.id}</span>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '800', display: 'block', textTransform: 'uppercase' }}>Ghana Card PIN</span>
+                        <span style={{ fontSize: '14px', color: '#00875a', fontWeight: '800', letterSpacing: '0.5px' }}>{printableTagEmployee.ghanaCardNo}</span>
+                      </div>
+                      <div style={{ gridColumn: 'span 2', borderTop: '1px solid #e2e8f0', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '800', display: 'block', textTransform: 'uppercase' }}>Corporate Email</span>
+                          <span style={{ fontSize: '13px', color: 'var(--text-main)', fontWeight: '700' }}>{printableTagEmployee.email}</span>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '800', display: 'block', textTransform: 'uppercase' }}>Staff Contact</span>
+                          <span style={{ fontSize: '13px', color: 'var(--primary)', fontWeight: '800' }}>{printableTagEmployee.phone}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Official Credentials Footer */}
+                    <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '16px', width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 'auto' }}>
+                      <div style={{ textAlign: 'left' }}>
+                        <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '800', display: 'block', textTransform: 'uppercase' }}>Issued Date</span>
+                        <span style={{ fontSize: '13px', color: 'var(--text-main)', fontWeight: '800' }}>{printableTagEmployee.joined || '15 Jan 2022'}</span>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontFamily: "'Plus Jakarta Sans', cursive, sans-serif", fontSize: '16px', fontWeight: '800', color: 'var(--primary)', fontStyle: 'italic', borderBottom: '1px solid #cbd5e1', paddingBottom: '2px', marginBottom: '4px', display: 'inline-block' }}>
+                          L. Kemenyo
+                        </div>
+                        <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '800', display: 'block', textTransform: 'uppercase' }}>Authorized Signature</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* --- BACK CARD --- */}
+                <div id="printable-id-card-back" className="printable-card-unit" style={{ width: '360px', minHeight: '560px', borderRadius: '28px', background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)', border: '2px solid #cbd5e1', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.22)', overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative', padding: '36px 28px', boxSizing: 'border-box' }}>
+                  {/* Back Header */}
+                  <div style={{ textAlign: 'center', borderBottom: '2px solid #e2e8f0', paddingBottom: '24px', marginBottom: '24px' }}>
+                    <div style={{ width: '56px', height: '56px', borderRadius: '18px', background: 'var(--primary-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', margin: '0 auto 12px', boxShadow: '0 8px 20px -6px var(--primary)' }}>
+                      <Building2 size={32} />
+                    </div>
+                    <h4 style={{ margin: 0, fontSize: '20px', fontWeight: '900', letterSpacing: '1px', color: 'var(--text-main)', textTransform: 'uppercase' }}>REALTYOS PLAZA</h4>
+                    <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', letterSpacing: '1.5px', textTransform: 'uppercase', marginTop: '2px', display: 'block' }}>PROPERTY MANAGEMENT HQ</span>
+                  </div>
+
+                  {/* Back Body / Company Details */}
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '18px', fontSize: '13px', color: 'var(--text-main)', lineHeight: '1.5', textAlign: 'left' }}>
+                    <div style={{ background: '#f1f5f9', padding: '14px 18px', borderRadius: '16px', border: '1px solid #cbd5e1' }}>
+                      <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Property Policy Notice</span>
+                      <span style={{ fontWeight: '600', fontSize: '12px', color: '#334155' }}>This digital identification badge is the strictly confidential property of RealtyOS Managed Assets Ltd. If found, please return immediately to the Head Office Security Desk.</span>
+                    </div>
+
+                    <div style={{ background: '#f8fafc', padding: '14px 18px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                      <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '800', display: 'block', textTransform: 'uppercase', marginBottom: '2px' }}>Corporate HQ Address</span>
+                      <span style={{ fontWeight: '800', fontSize: '13px', color: 'var(--text-main)' }}>RealtyOS Towers, 14 Independence Avenue, Ridge, Accra, Ghana</span>
+                    </div>
+
+                    <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div>
+                        <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '800', display: 'block', textTransform: 'uppercase', marginBottom: '2px' }}>HQ Security Desk</span>
+                        <span style={{ fontWeight: '900', fontSize: '13px', color: 'var(--primary)' }}>+233 30 277 8899</span>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '800', display: 'block', textTransform: 'uppercase', marginBottom: '2px' }}>HR Hotline Number</span>
+                        <span style={{ fontWeight: '900', fontSize: '13px', color: 'var(--primary)' }}>+233 24 111 2233</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Emergency Block at the bottom */}
+                  <div style={{ marginTop: '24px', background: '#fff1f2', border: '1px solid #fecdd3', padding: '16px 20px', borderRadius: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', textAlign: 'left' }}>
+                    <div>
+                      <span style={{ fontSize: '10px', color: '#e11d48', fontWeight: '900', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>🚨 IN CASE OF EMERGENCY</span>
+                      <span style={{ fontSize: '15px', color: '#881337', fontWeight: '900', marginTop: '2px', display: 'block' }}>{printableTagEmployee.emergencyName || 'HR Support Desk'}</span>
+                    </div>
+                    <span style={{ fontSize: '13px', color: '#e11d48', fontWeight: '900', background: 'white', padding: '6px 12px', borderRadius: '12px', border: '1px solid #ffe4e6', boxShadow: '0 2px 6px rgba(225,29,72,0.15)', flexShrink: 0 }}>
+                      {printableTagEmployee.emergencyPhone || '+233 24 000 0000'}
+                    </span>
+                  </div>
+                </div>
+
+              </div>
+
+              <div className="no-print" style={{ display: 'flex', gap: '14px', marginTop: '36px', width: '100%', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => setPrintableTagEmployee(null)}
+                  style={{ padding: '16px 28px', borderRadius: '18px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#334155', fontWeight: '800', fontSize: '14px', cursor: 'pointer', transition: '0.2s' }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = '#f1f5f9'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = '#f8fafc'}
+                >
+                  Close Preview
+                </button>
+                <button
+                  onClick={() => handleDownloadCardImage('png')}
+                  style={{ padding: '16px 28px', borderRadius: '18px', border: '1px solid #0284c7', background: '#e0f2fe', color: '#0369a1', fontWeight: '800', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', transition: '0.2s', boxShadow: '0 4px 12px rgba(2,132,199,0.1)' }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = '#bae6fd'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = '#e0f2fe'}
+                >
+                  <Download size={18} /> Save PNG (High Res)
+                </button>
+                <button
+                  onClick={() => handleDownloadCardImage('jpeg')}
+                  style={{ padding: '16px 28px', borderRadius: '18px', border: '1px solid #7c3aed', background: '#ede9fe', color: '#6d28d9', fontWeight: '800', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', transition: '0.2s', boxShadow: '0 4px 12px rgba(124,58,237,0.1)' }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = '#ddd6fe'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = '#ede9fe'}
+                >
+                  <Download size={18} /> Save JPG (High Res)
+                </button>
+                <button
+                  disabled={isGeneratingPdf}
+                  onClick={executeBrowserPrint}
+                  style={{ padding: '16px 36px', borderRadius: '18px', border: 'none', background: 'var(--primary)', color: 'white', fontWeight: '800', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 12px 25px -5px rgba(0, 135, 90, 0.4)', transition: '0.2s', opacity: isGeneratingPdf ? 0.7 : 1 }}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                >
+                  <Printer size={18} /> {isGeneratingPdf ? 'Generating Real PDF...' : 'Download Real PDF Badge'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ========================================================= */}
+      {/* DRAWER / MODAL: INSPECT EMPLOYEE PROFILE */}
+      {/* ========================================================= */}
+      <AnimatePresence>
+        {selectedStaffProfile && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              style={{ background: 'white', padding: '40px', borderRadius: '28px', width: '740px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '28px', borderBottom: '1px solid var(--border-dark)', paddingBottom: '24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                  <div style={{ width: '72px', height: '72px', borderRadius: '50%', overflow: 'hidden', border: '3px solid var(--primary)', flexShrink: 0 }}>
+                    <img src={selectedStaffProfile.passportPhoto} alt={selectedStaffProfile.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                      <span style={{ padding: '4px 10px', borderRadius: '20px', backgroundColor: 'var(--primary-glow)', color: 'var(--primary)', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase' }}>
+                        {selectedStaffProfile.id} • {selectedStaffProfile.status}
+                      </span>
+                      <span style={{ fontSize: '14px', fontWeight: '800', color: '#d97706', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Star size={16} fill="#f59e0b" color="#f59e0b" /> {selectedStaffProfile.rating} ⭐
+                      </span>
+                    </div>
+                    <h3 style={{ fontSize: '26px', fontWeight: '800', color: 'var(--text-main)', margin: 0 }}>{selectedStaffProfile.name}</h3>
+                    <p style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: '600', margin: '2px 0 0' }}>{selectedStaffProfile.role} • {selectedStaffProfile.dept}</p>
+                  </div>
+                </div>
+                <button onClick={() => setSelectedStaffProfile(null)} style={{ background: '#f1f5f9', border: 'none', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Financial & Direct Deposit Summary */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+                <div style={{ padding: '20px', background: '#f8fafc', borderRadius: '20px', border: '1px solid var(--border-dark)' }}>
+                  <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Compensation Package</span>
+                  <span style={{ fontSize: '22px', fontWeight: '900', color: 'var(--primary)', display: 'block' }}>{selectedStaffProfile.formattedSalary}</span>
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600', marginTop: '4px', display: 'block' }}>{selectedStaffProfile.contract}</span>
+                </div>
+
+                <div style={{ padding: '20px', background: '#f8fafc', borderRadius: '20px', border: '1px solid var(--border-dark)' }}>
+                  <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Direct ACH Banking Setup</span>
+                  <span style={{ fontSize: '16px', fontWeight: '900', color: 'var(--text-main)', display: 'block' }}>{selectedStaffProfile.bankName}</span>
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', marginTop: '2px', display: 'block' }}>Acc: {selectedStaffProfile.bankAccNo}</span>
+                </div>
+              </div>
+
+              {/* Emergency Contact & Biometric Info */}
+              <div style={{ background: '#fef8f2', border: '1px solid #fed7aa', padding: '20px', borderRadius: '20px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <PhoneCall size={24} style={{ color: '#ea580c' }} />
+                  <div>
+                    <span style={{ fontSize: '11px', fontWeight: '800', color: '#ea580c', textTransform: 'uppercase', display: 'block' }}>Emergency Contact Person</span>
+                    <span style={{ fontSize: '16px', fontWeight: '900', color: '#431407', display: 'block', marginTop: '2px' }}>{selectedStaffProfile.emergencyName}</span>
+                    <span style={{ fontSize: '13px', fontWeight: '700', color: '#9a3412', display: 'block' }}>Phone: {selectedStaffProfile.emergencyPhone}</span>
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block' }}>Ghana Card PIN</span>
+                  <span style={{ fontSize: '14px', fontWeight: '800', color: 'var(--primary)' }}>{selectedStaffProfile.ghanaCardNo}</span>
+                </div>
+              </div>
+
+              {/* Verified ID Document Images Preview & Local Upload */}
+              <div style={{ background: 'white', border: '1px solid var(--border-dark)', padding: '20px', borderRadius: '20px', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                    Verified Ghana Card Images (Front & Back)
+                  </span>
+                  <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--primary)', background: '#ecfdf5', padding: '4px 10px', borderRadius: '20px', border: '1px solid #a7f3d0' }}>
+                    Click either card to upload new scan
+                  </span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <label style={{ height: '150px', borderRadius: '16px', overflow: 'hidden', border: '2px dashed #cbd5e1', background: '#f8fafc', cursor: 'pointer', position: 'relative', display: 'block', transition: '0.2s', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)' }} title="Click to upload Front ID from local device">
+                    <img src={selectedStaffProfile.ghanaCardFront} alt="Ghana Card Front" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', opacity: 0, transition: '0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white' }} onMouseEnter={(e) => e.currentTarget.style.opacity = 1} onMouseLeave={(e) => e.currentTarget.style.opacity = 0}>
+                      <UploadCloud size={28} style={{ marginBottom: '4px' }} />
+                      <span style={{ fontSize: '12px', fontWeight: '800' }}>Update Front Scan</span>
+                    </div>
+                    <input type="file" accept="image/*" onChange={(e) => handleUpdateProfileGhanaCard(e, 'front')} style={{ display: 'none' }} />
+                  </label>
+                  
+                  <label style={{ height: '150px', borderRadius: '16px', overflow: 'hidden', border: '2px dashed #cbd5e1', background: '#f8fafc', cursor: 'pointer', position: 'relative', display: 'block', transition: '0.2s', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)' }} title="Click to upload Back ID from local device">
+                    <img src={selectedStaffProfile.ghanaCardBack} alt="Ghana Card Back" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', opacity: 0, transition: '0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white' }} onMouseEnter={(e) => e.currentTarget.style.opacity = 1} onMouseLeave={(e) => e.currentTarget.style.opacity = 0}>
+                      <UploadCloud size={28} style={{ marginBottom: '4px' }} />
+                      <span style={{ fontSize: '12px', fontWeight: '800' }}>Update Back Scan</span>
+                    </div>
+                    <input type="file" accept="image/*" onChange={(e) => handleUpdateProfileGhanaCard(e, 'back')} style={{ display: 'none' }} />
+                  </label>
+                </div>
+              </div>
+
+              {/* Comprehensive Attendance Ledger Breakdown */}
+              <div style={{ background: 'white', border: '1px solid var(--border-dark)', padding: '20px', borderRadius: '20px', marginBottom: '28px' }}>
+                <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '16px' }}>
+                  Detailed Punctuality Breakdown ({selectedStaffProfile.attendanceRate} Score)
+                </span>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', textAlign: 'center' }}>
+                  <div style={{ padding: '12px', background: '#ecfdf5', borderRadius: '14px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: '800', color: '#10b981', display: 'block', textTransform: 'uppercase' }}>Present</span>
+                    <span style={{ fontSize: '20px', fontWeight: '900', color: '#10b981', marginTop: '4px', display: 'block' }}>{selectedStaffProfile.daysPresent}</span>
+                  </div>
+
+                  <div style={{ padding: '12px', background: '#fffbeb', borderRadius: '14px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: '800', color: '#d97706', display: 'block', textTransform: 'uppercase' }}>Late Arrival</span>
+                    <span style={{ fontSize: '20px', fontWeight: '900', color: '#d97706', marginTop: '4px', display: 'block' }}>{selectedStaffProfile.daysLate}</span>
+                  </div>
+
+                  <div style={{ padding: '12px', background: '#e0e7ff', borderRadius: '14px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: '800', color: '#4338ca', display: 'block', textTransform: 'uppercase' }}>On Leave</span>
+                    <span style={{ fontSize: '20px', fontWeight: '900', color: '#4338ca', marginTop: '4px', display: 'block' }}>{selectedStaffProfile.daysOnLeave}</span>
+                  </div>
+
+                  <div style={{ padding: '12px', background: '#fef2f2', borderRadius: '14px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: '800', color: '#ef4444', display: 'block', textTransform: 'uppercase' }}>Absent</span>
+                    <span style={{ fontSize: '20px', fontWeight: '900', color: '#ef4444', marginTop: '4px', display: 'block' }}>{selectedStaffProfile.daysAbsent}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '32px' }}>
+                <div style={{ padding: '16px 20px', background: selectedStaffProfile.sanctionsCount > 0 ? '#fef2f2' : '#f8fafc', border: selectedStaffProfile.sanctionsCount > 0 ? '1px solid #fca5a5' : '1px solid var(--border-dark)', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <Ban size={20} style={{ color: selectedStaffProfile.sanctionsCount > 0 ? '#ef4444' : '#64748b' }} />
+                    <span style={{ fontSize: '14px', fontWeight: '800', color: selectedStaffProfile.sanctionsCount > 0 ? '#ef4444' : 'var(--text-main)' }}>Disciplinary Sanctions Registry</span>
+                  </div>
+                  <span style={{ fontSize: '14px', fontWeight: '800', color: selectedStaffProfile.sanctionsCount > 0 ? '#ef4444' : 'var(--text-muted)' }}>
+                    {selectedStaffProfile.sanctionsCount} Recorded Infractions
+                  </span>
+                </div>
+
+                <div style={{ padding: '16px 20px', background: selectedStaffProfile.loansCount > 0 ? '#fffbeb' : '#f8fafc', border: selectedStaffProfile.loansCount > 0 ? '1px solid #fde68a' : '1px solid var(--border-dark)', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <Landmark size={20} style={{ color: selectedStaffProfile.loansCount > 0 ? '#d97706' : '#64748b' }} />
+                    <span style={{ fontSize: '14px', fontWeight: '800', color: selectedStaffProfile.loansCount > 0 ? '#d97706' : 'var(--text-main)' }}>Staff Credit Status</span>
+                  </div>
+                  <span style={{ fontSize: '14px', fontWeight: '800', color: selectedStaffProfile.loansCount > 0 ? '#d97706' : 'var(--text-muted)' }}>
+                    {selectedStaffProfile.loansCount > 0 ? 'Active Credit / Advance Account' : 'Zero Active Debt'}
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => setSelectedStaffProfile(null)}
+                  style={{ padding: '16px 32px', borderRadius: '16px', border: '1px solid var(--border-dark)', background: '#f1f5f9', color: '#334155', fontWeight: '800', fontSize: '15px', cursor: 'pointer' }}
+                >
+                  Close Profile
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+};
+
+export default HR;
