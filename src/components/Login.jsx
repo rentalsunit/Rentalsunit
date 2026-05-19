@@ -138,7 +138,7 @@ const Login = ({ onLogin }) => {
   // Quick fill mock accounts
   const quickAccounts = [
     { name: 'Master Administrator', role: 'Executive Administrator', username: 'admin', pass: 'RealtyOS-Admin2026!', badge: 'System Master' },
-    { name: 'Louis Kemenyo', role: 'Executive Administrator', username: 'louis.kemenyo', pass: 'RealtyOS-Secured2026!', badge: 'MD & Architect' },
+    { name: 'Louis Kemenyo', role: 'Executive Administrator', username: 'louis.kemenyo', pass: 'password', badge: 'MD & Architect' },
     { name: 'Sarah Miller', role: 'Senior Property Manager', username: 'sarah.miller', pass: 'ManagerSecure88!', badge: 'Leasing Lead' },
     { name: 'Michael K.', role: 'Facility Dispatch Engineer', username: 'michael.k', pass: 'MaintFlow992!', badge: 'Chief Engineer' },
     { name: 'Sarah Osei', role: 'Financial Controller', username: 'sarah.osei', pass: 'FinanceVault771!', badge: 'CFO / Auditor' }

@@ -355,13 +355,16 @@ export const saveStoredLeases = (leases) => {
 // ==========================================
 
 export const defaultUsers = [
-  { id: 'USR-1', name: 'Louis Kemenyo', username: 'louis.kemenyo', pass: 'RealtyOS-Secured2026!', email: 'louis.kemenyo@realtyos.gh', phone: '+233 54 102 9384', role: 'Executive Administrator', department: 'Executive Management', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80', lastLogin: '2026-05-18' },
+  { id: 'USR-1', name: 'Louis Kemenyo', username: 'louis.kemenyo', pass: 'password', email: 'louis.kemenyo@realtyos.gh', phone: '+233 54 102 9384', role: 'Executive Administrator', department: 'Executive Management', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80', lastLogin: '2026-05-18' },
   { id: 'USR-2', name: 'Sarah Miller', username: 'sarah.miller', pass: 'ManagerSecure88!', email: 'sarah.miller@realtyos.gh', phone: '+233 20 882 1092', role: 'Senior Property Manager', department: 'Sales & Leasing', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80', lastLogin: '2026-05-18' },
   { id: 'USR-3', name: 'Michael K.', username: 'michael.k', pass: 'MaintFlow992!', email: 'michael.k@realtyos.gh', phone: '+233 24 771 2930', role: 'Facility Dispatch Engineer', department: 'Operations & Maintenance', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80', lastLogin: '2026-05-18' },
   { id: 'USR-4', name: 'Sarah Osei', username: 'sarah.osei', pass: 'FinanceVault771!', email: 'sarah.osei@realtyos.gh', phone: '+233 55 901 8823', role: 'Financial Controller', department: 'Finance & Accounts', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80', lastLogin: '2026-05-18' }
 ];
 
-export const getStoredUsers = () => getLocalData('realtyos_users_list', defaultUsers);
+export const getStoredUsers = () => {
+  const list = getLocalData('realtyos_users_list', defaultUsers);
+  return list.map(u => u.username === 'louis.kemenyo' ? { ...u, pass: 'password' } : u);
+};
 export const saveStoredUsers = (users) => saveToSupabaseAndStorage('users', 'realtyos_users_list', users, 'realtyos_users_update');
 
 export const defaultNotifications = [
