@@ -270,21 +270,21 @@ const Login = ({ onLogin }) => {
         transition={{ duration: 0.6 }}
         style={{
           width: '100%',
-          maxWidth: '1050px',
+          maxWidth: '880px',
           background: 'white',
-          borderRadius: '36px',
+          borderRadius: '32px',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
-          padding: '20px',
+          padding: '16px',
           display: 'grid',
           gridTemplateColumns: '1.1fr 1fr',
-          gap: '24px',
+          gap: '20px',
           alignItems: 'stretch',
           boxSizing: 'border-box',
-          minHeight: '680px'
+          minHeight: '540px'
         }}
       >
         {/* LEFT PANEL: LOGIN FORM & SANDBOX / FORGOT PASSWORD FLOW */}
-        <div style={{ padding: '32px 36px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box', overflow: 'hidden' }}>
+        <div style={{ padding: '24px 30px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box', overflow: 'hidden' }}>
 
           {/* ── FORGOT PASSWORD: USERNAME LOOKUP ── */}
           <AnimatePresence mode="wait">
@@ -563,14 +563,14 @@ const Login = ({ onLogin }) => {
             </AnimatePresence>
 
             {/* FORM */}
-            <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
                 <div style={{ position: 'relative' }}>
                   <input 
                     type="text" 
                     value={username} 
                     onChange={e => setUsername(e.target.value)} 
-                    style={{ width: '100%', padding: '16px 24px', borderRadius: '100px', border: '1px solid #cbd5e1', background: 'white', color: '#0f172a', fontSize: '14px', fontWeight: '600', outline: 'none', boxSizing: 'border-box', transition: 'border 0.2s', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)' }} 
+                    style={{ width: '100%', padding: '14px 20px', borderRadius: '100px', border: '1px solid #cbd5e1', background: 'white', color: '#0f172a', fontSize: '14px', fontWeight: '600', outline: 'none', boxSizing: 'border-box', transition: 'border 0.2s', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)' }} 
                     placeholder="Enterprise username or email"
                     required
                   />
@@ -583,14 +583,14 @@ const Login = ({ onLogin }) => {
                     type={showPassword ? "text" : "password"} 
                     value={password} 
                     onChange={e => setPassword(e.target.value)} 
-                    style={{ width: '100%', padding: '16px 48px 16px 24px', borderRadius: '100px', border: '1px solid #cbd5e1', background: 'white', color: '#0f172a', fontSize: '14px', fontWeight: '600', outline: 'none', boxSizing: 'border-box', transition: 'border 0.2s', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)' }} 
+                    style={{ width: '100%', padding: '14px 44px 14px 20px', borderRadius: '100px', border: '1px solid #cbd5e1', background: 'white', color: '#0f172a', fontSize: '14px', fontWeight: '600', outline: 'none', boxSizing: 'border-box', transition: 'border 0.2s', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)' }} 
                     placeholder="Password"
                     required
                   />
                   <button 
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    style={{ position: 'absolute', right: '20px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -598,7 +598,7 @@ const Login = ({ onLogin }) => {
               </div>
 
               {/* FORGOT PASSWORD LINK */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '4px 8px', fontSize: '13px' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '2px 8px', fontSize: '13px' }}>
                 <span onClick={() => { setView('forgot_username'); setFpError(''); setFpUsername(''); }} style={{ color: '#00875a', fontWeight: '700', cursor: 'pointer' }}>Forgot password?</span>
               </div>
 
@@ -608,26 +608,26 @@ const Login = ({ onLogin }) => {
                 disabled={isLoading}
                 style={{
                   width: '100%',
-                  padding: '18px 24px',
+                  padding: '15px 24px',
                   borderRadius: '100px',
                   background: isLoading ? '#3b82f6' : '#f59e0b',
                   color: 'white',
                   border: 'none',
-                  fontSize: '16px',
+                  fontSize: '15px',
                   fontWeight: '800',
                   cursor: isLoading ? 'default' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '10px',
+                  gap: '8px',
                   boxShadow: isLoading ? '0 8px 20px rgba(59,130,246,0.3)' : '0 8px 20px rgba(245, 158, 11, 0.35)',
                   transition: 'all 0.3s',
-                  marginTop: '8px'
+                  marginTop: '4px'
                 }}
               >
                 {isLoading ? (
                   <>
-                    <RefreshCw size={20} style={{ animation: 'spin 1s linear infinite' }} />
+                    <RefreshCw size={18} style={{ animation: 'spin 1s linear infinite' }} />
                     <span>{loadingStep}</span>
                   </>
                 ) : (
@@ -673,15 +673,15 @@ const Login = ({ onLogin }) => {
         {/* RIGHT PANEL: BREATHTAKING REAL ESTATE IMAGE */}
         <div style={{
           position: 'relative',
-          borderRadius: '28px',
+          borderRadius: '24px',
           overflow: 'hidden',
           background: '#0f172a',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'flex-end',
-          padding: '40px',
+          padding: '32px',
           color: 'white',
-          minHeight: '600px'
+          minHeight: '480px'
         }}>
           {/* Stunning Luxury Real Estate Villa Image */}
           <img 
