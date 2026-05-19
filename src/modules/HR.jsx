@@ -6,10 +6,16 @@ import {
   Calendar, Star, Wallet, FileCheck, Ban, Landmark, Coins, Play, AlertCircle,
   Lock, UserCheck, Calculator, LogIn, LogOut, Coffee, BarChart2, QrCode, 
   Printer, CreditCard, Camera, UploadCloud, PhoneCall, Building2, Download,
-  Badge, Shield
+  Badge, Shield, Edit2, Trash2
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { generateRealPDF } from '../lib/pdfService';
+import {
+  getStoredStaffEmployees, saveStoredStaffEmployees,
+  getStoredStaffLeaves, saveStoredStaffLeaves,
+  getStoredStaffAttendance, saveStoredStaffAttendance,
+  getStoredStaffLoans, saveStoredStaffLoans
+} from '../lib/masterData';
 
 const HR = () => {
   const [activeSubTab, setActiveSubTab] = useState('directory'); // directory, attendance, leaves, payroll, loans, sanctions, appraisals
@@ -23,256 +29,7 @@ const HR = () => {
   const [attendanceDate, setAttendanceDate] = useState('2026-05-17');
 
   // 1. Staff Directory State
-  const [staffList, setStaffList] = useState([
-    { 
-      id: 'EMP-K9X2', 
-      name: 'Louis Kemenyo', 
-      role: 'Portfolio Director', 
-      dept: 'Executive Management', 
-      rank: 'Executive Staff (Grade 1)',
-      ghanaCardNo: 'GHA-718293819-2',
-      passportPhoto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
-      ghanaCardFront: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
-      ghanaCardBack: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
-      bankName: 'Ecobank Ghana',
-      bankAccName: 'Louis Kemenyo',
-      bankAccNo: '1029384759102',
-      emergencyName: 'Grace Kemenyo (Spouse)',
-      emergencyPhone: '+233 24 111 9021',
-      email: 'louis@realtyos.com', 
-      phone: '+233 54 102 9384',
-      salary: 25000, 
-      formattedSalary: '₵ 25,000 / mo',
-      contract: 'Permanent Full-time', 
-      status: 'Active', 
-      joined: '15 Jan 2022',
-      rating: 4.9,
-      daysPresent: 21,
-      daysLate: 0,
-      daysAbsent: 0,
-      daysOnLeave: 0,
-      attendanceRate: '100%',
-      loansCount: 0,
-      sanctionsCount: 0
-    },
-    { 
-      id: 'EMP-M4T8', 
-      name: 'Sarah Miller', 
-      role: 'Head of Leasing', 
-      dept: 'Sales & Leasing', 
-      rank: 'Senior Staff (Grade 2)',
-      ghanaCardNo: 'GHA-829102938-1',
-      passportPhoto: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-      ghanaCardFront: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
-      ghanaCardBack: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
-      bankName: 'Stanbic Bank',
-      bankAccName: 'Sarah Miller',
-      bankAccNo: '9012837482910',
-      emergencyName: 'Jonathan Miller (Brother)',
-      emergencyPhone: '+233 20 551 2839',
-      email: 'sarah.m@realtyos.com', 
-      phone: '+233 20 882 1092',
-      salary: 14500, 
-      formattedSalary: '₵ 14,500 / mo',
-      contract: 'Permanent Full-time', 
-      status: 'Active', 
-      joined: '01 Mar 2023',
-      rating: 4.8,
-      daysPresent: 19,
-      daysLate: 1,
-      daysAbsent: 0,
-      daysOnLeave: 3, // Medical leave
-      attendanceRate: '98%',
-      loansCount: 1,
-      sanctionsCount: 0
-    },
-    { 
-      id: 'EMP-E7R1', 
-      name: 'Michael K.', 
-      role: 'Chief Facility Engineer', 
-      dept: 'Operations & Maintenance', 
-      rank: 'Senior Staff (Grade 2)',
-      ghanaCardNo: 'GHA-394810293-5',
-      passportPhoto: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80',
-      ghanaCardFront: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
-      ghanaCardBack: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
-      bankName: 'GCB Bank',
-      bankAccName: 'Michael Kojo Mensah',
-      bankAccNo: '3019283948102',
-      emergencyName: 'Akosua Mensah (Mother)',
-      emergencyPhone: '+233 24 881 2930',
-      email: 'michael.k@realtyos.com', 
-      phone: '+233 24 771 2930',
-      salary: 16000, 
-      formattedSalary: '₵ 16,000 / mo',
-      contract: 'Permanent Full-time', 
-      status: 'Active', 
-      joined: '10 Nov 2023',
-      rating: 4.7,
-      daysPresent: 20,
-      daysLate: 1,
-      daysAbsent: 0,
-      daysOnLeave: 0,
-      attendanceRate: '97%',
-      loansCount: 1,
-      sanctionsCount: 0
-    },
-    { 
-      id: 'EMP-A2P4', 
-      name: 'Sarah Osei', 
-      role: 'Senior Portfolio Accountant', 
-      dept: 'Finance & Accounts', 
-      rank: 'Senior Staff (Grade 2)',
-      ghanaCardNo: 'GHA-582910394-8',
-      passportPhoto: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80',
-      ghanaCardFront: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
-      ghanaCardBack: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
-      bankName: 'Absa Bank Ghana',
-      bankAccName: 'Sarah Osei',
-      bankAccNo: '4019283749102',
-      emergencyName: 'Kwabena Osei (Father)',
-      emergencyPhone: '+233 55 221 9021',
-      email: 'sarah.o@realtyos.com', 
-      phone: '+233 55 901 8823',
-      salary: 12500, 
-      formattedSalary: '₵ 12,500 / mo',
-      contract: 'Permanent Full-time', 
-      status: 'Active', 
-      joined: '15 May 2024',
-      rating: 4.9,
-      daysPresent: 21,
-      daysLate: 0,
-      daysAbsent: 0,
-      daysOnLeave: 0,
-      attendanceRate: '100%',
-      loansCount: 1,
-      sanctionsCount: 0
-    },
-    { 
-      id: 'EMP-W8N5', 
-      name: 'David Wilson', 
-      role: 'Safety & Compliance Chief', 
-      dept: 'Compliance & Legal', 
-      rank: 'Executive Staff (Grade 1)',
-      ghanaCardNo: 'GHA-492019283-7',
-      passportPhoto: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=400&q=80',
-      ghanaCardFront: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
-      ghanaCardBack: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
-      bankName: 'Fidelity Bank',
-      bankAccName: 'David Nii Wilson',
-      bankAccNo: '5019283749102',
-      emergencyName: 'Elizabeth Wilson (Sister)',
-      emergencyPhone: '+233 26 111 8823',
-      email: 'david.w@realtyos.com', 
-      phone: '+233 26 441 9021',
-      salary: 13000, 
-      formattedSalary: '₵ 13,000 / mo',
-      contract: 'Permanent Full-time', 
-      status: 'Active', 
-      joined: '05 Jan 2025',
-      rating: 4.6,
-      daysPresent: 18,
-      daysLate: 3,
-      daysAbsent: 0,
-      daysOnLeave: 0,
-      attendanceRate: '94%',
-      loansCount: 0,
-      sanctionsCount: 0
-    },
-    { 
-      id: 'EMP-S3Q1', 
-      name: 'Kwame Mensah', 
-      role: 'Security Detail Lead', 
-      dept: 'Security & Surveillance', 
-      rank: 'Junior Staff (Grade 3)',
-      ghanaCardNo: 'GHA-102938475-4',
-      passportPhoto: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=400&q=80',
-      ghanaCardFront: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
-      ghanaCardBack: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
-      bankName: 'Prudential Bank',
-      bankAccName: 'Kwame Mensah',
-      bankAccNo: '6019283749102',
-      emergencyName: 'Yaa Asantewaa (Wife)',
-      emergencyPhone: '+233 27 551 9021',
-      email: 'kwame.m@realtyos.com', 
-      phone: '+233 27 331 9920',
-      salary: 6500, 
-      formattedSalary: '₵ 6,500 / mo',
-      contract: 'Annual Contract', 
-      status: 'On Leave', 
-      joined: '12 Aug 2024',
-      rating: 4.5,
-      daysPresent: 8,
-      daysLate: 0,
-      daysAbsent: 1,
-      daysOnLeave: 12, // Active vacation
-      attendanceRate: '88%',
-      loansCount: 0,
-      sanctionsCount: 1
-    },
-    { 
-      id: 'EMP-V9B7', 
-      name: 'Victoria Addo', 
-      role: 'Client Experience Executive', 
-      dept: 'Sales & Leasing', 
-      rank: 'Junior Staff (Grade 3)',
-      ghanaCardNo: 'GHA-928374610-9',
-      passportPhoto: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=400&q=80',
-      ghanaCardFront: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
-      ghanaCardBack: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
-      bankName: 'Consolidated Bank Ghana',
-      bankAccName: 'Victoria Addo',
-      bankAccNo: '7019283749102',
-      emergencyName: 'George Addo (Husband)',
-      emergencyPhone: '+233 50 221 2839',
-      email: 'vicky.a@realtyos.com', 
-      phone: '+233 50 119 2839',
-      salary: 8500, 
-      formattedSalary: '₵ 8,500 / mo',
-      contract: 'Annual Contract', 
-      status: 'Active', 
-      joined: '10 Feb 2026',
-      rating: 4.9,
-      daysPresent: 20,
-      daysLate: 0,
-      daysAbsent: 0,
-      daysOnLeave: 0,
-      attendanceRate: '100%',
-      loansCount: 0,
-      sanctionsCount: 0
-    },
-    { 
-      id: 'EMP-T1Z6', 
-      name: 'Kofi Antwi', 
-      role: 'HVAC Specialist Technician', 
-      dept: 'Operations & Maintenance', 
-      rank: 'Subcontractor / Temporary',
-      ghanaCardNo: 'GHA-201928374-3',
-      passportPhoto: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80',
-      ghanaCardFront: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
-      ghanaCardBack: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
-      bankName: 'Access Bank Ghana',
-      bankAccName: 'Kofi Antwi',
-      bankAccNo: '8019283749102',
-      emergencyName: 'Ama Antwi (Sister)',
-      emergencyPhone: '+233 24 111 1029',
-      email: 'kofi.a@realtyos.com', 
-      phone: '+233 24 991 1029',
-      salary: 7200, 
-      formattedSalary: '₵ 7,200 / mo',
-      contract: 'Temporary / Subcontractor', 
-      status: 'Suspended', 
-      joined: '01 Mar 2026',
-      rating: 3.2,
-      daysPresent: 14,
-      daysLate: 4,
-      daysAbsent: 3,
-      daysOnLeave: 0,
-      attendanceRate: '78%',
-      loansCount: 0,
-      sanctionsCount: 2
-    }
-  ]);
+  const [staffList, setStaffList] = useState(() => getStoredStaffEmployees());
 
   // Onboarding Form Live Inputs State
   const [newEmpGhanaCard, setNewEmpGhanaCard] = useState('GHA-');
@@ -280,31 +37,31 @@ const HR = () => {
   const [ghanaCardFrontPreview, setGhanaCardFrontPreview] = useState(null);
   const [ghanaCardBackPreview, setGhanaCardBackPreview] = useState(null);
 
+  // Edit Employee Form Fields State
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editEmpName, setEditEmpName] = useState('');
+  const [editEmpRole, setEditEmpRole] = useState('');
+  const [editEmpDept, setEditEmpDept] = useState('');
+  const [editEmpRank, setEditEmpRank] = useState('');
+  const [editEmpGhanaCard, setEditEmpGhanaCard] = useState('');
+  const [editEmpEmail, setEditEmpEmail] = useState('');
+  const [editEmpPhone, setEditEmpPhone] = useState('');
+  const [editEmpSalary, setEditEmpSalary] = useState(0);
+  const [editEmpBankName, setEditEmpBankName] = useState('');
+  const [editEmpBankAccNo, setEditEmpBankAccNo] = useState('');
+  const [editEmpEmergencyName, setEditEmpEmergencyName] = useState('');
+  const [editEmpEmergencyPhone, setEditEmpEmergencyPhone] = useState('');
+  const [editEmpStatus, setEditEmpStatus] = useState('Active');
+  const [editEmpContract, setEditEmpContract] = useState('Permanent Full-time');
+
   // 2. Leaves & Vacations State
-  const [leavesList, setLeavesList] = useState([
-    { id: 'LV-401', employee: 'Kwame Mensah', type: 'Annual Vacation', startDate: '2026-05-10', endDate: '2026-05-24', formattedDates: '10 May - 24 May 2026', duration: '14 Days', reason: 'Annual statutory rest entitlement.', status: 'Approved', approvedBy: 'Louis Kemenyo' },
-    { id: 'LV-402', employee: 'Sarah Miller', type: 'Medical Leave', startDate: '2026-05-02', endDate: '2026-05-05', formattedDates: '02 May - 05 May 2026', duration: '3 Days', reason: 'Dental surgery recovery.', status: 'Approved', approvedBy: 'Louis Kemenyo' },
-    { id: 'LV-403', employee: 'Michael K.', type: 'Personal Leave', startDate: '2026-05-28', endDate: '2026-05-30', formattedDates: '28 May - 30 May 2026', duration: '2 Days', reason: 'Family funeral attendance in Kumasi.', status: 'Pending Sign-off', approvedBy: 'Pending' },
-    { id: 'LV-404', employee: 'Victoria Addo', type: 'Maternity Leave', startDate: '2026-07-01', endDate: '2026-10-01', formattedDates: '01 Jul - 01 Oct 2026', duration: '90 Days', reason: 'Statutory 3-month maternity leave.', status: 'Pending Sign-off', approvedBy: 'Pending' },
-  ]);
+  const [leavesList, setLeavesList] = useState(() => getStoredStaffLeaves());
 
   // 3. Daily Attendance Logs State
-  const [attendanceLogsList, setAttendanceLogsList] = useState([
-    { id: 'ATT-301', date: '2026-05-17', formattedDate: '17 May 2026', employee: 'Louis Kemenyo', dept: 'Executive Management', clockIn: '07:45 AM', clockOut: '05:30 PM', shiftHours: '9.75 hrs', status: '🟢 Present (On Time)', location: 'HQ Corporate Plaza', notes: 'Routine check-in.' },
-    { id: 'ATT-302', date: '2026-05-17', formattedDate: '17 May 2026', employee: 'Sarah Miller', dept: 'Sales & Leasing', clockIn: '08:00 AM', clockOut: '05:15 PM', shiftHours: '9.25 hrs', status: '🟢 Present (On Time)', location: 'HQ Corporate Plaza', notes: 'Routine check-in.' },
-    { id: 'ATT-303', date: '2026-05-17', formattedDate: '17 May 2026', employee: 'Michael K.', dept: 'Operations & Maintenance', clockIn: '07:30 AM', clockOut: '06:00 PM', shiftHours: '10.5 hrs', status: '🟢 Present (On Time)', location: 'Sunset Luxury Site', notes: 'Facility emergency checks.' },
-    { id: 'ATT-304', date: '2026-05-17', formattedDate: '17 May 2026', employee: 'Sarah Osei', dept: 'Finance & Accounts', clockIn: '08:14 AM', clockOut: '05:00 PM', shiftHours: '8.75 hrs', status: '🟢 Present (On Time)', location: 'HQ Corporate Plaza', notes: 'Routine check-in.' },
-    { id: 'ATT-305', date: '2026-05-17', formattedDate: '17 May 2026', employee: 'David Wilson', dept: 'Compliance & Legal', clockIn: '08:35 AM', clockOut: '04:45 PM', shiftHours: '8.1 hrs', status: '🟡 Present (Late)', location: 'HQ Corporate Plaza', notes: 'Traffic delay on N1 highway.' },
-    { id: 'ATT-306', date: '2026-05-17', formattedDate: '17 May 2026', employee: 'Kwame Mensah', dept: 'Security & Surveillance', clockIn: '--:-- --', clockOut: '--:-- --', shiftHours: '0.0 hrs', status: '🏖️ Approved Leave', location: 'Off Duty', notes: 'Automated detection: Statutory Annual Vacation.' },
-    { id: 'ATT-307', date: '2026-05-17', formattedDate: '17 May 2026', employee: 'Victoria Addo', dept: 'Sales & Leasing', clockIn: '07:55 AM', clockOut: '05:00 PM', shiftHours: '9.0 hrs', status: '🟢 Present (On Time)', location: 'HQ Corporate Plaza', notes: 'Routine check-in.' },
-    { id: 'ATT-308', date: '2026-05-17', formattedDate: '17 May 2026', employee: 'Kofi Antwi', dept: 'Operations & Maintenance', clockIn: '--:-- --', clockOut: '--:-- --', shiftHours: '0.0 hrs', status: '🔴 Unexcused Absent', location: 'No Show', notes: 'Failed to clock in without notification.' },
-  ]);
+  const [attendanceLogsList, setAttendanceLogsList] = useState(() => getStoredStaffAttendance());
 
   // 4. Staff Loans State
-  const [loansList, setLoansList] = useState([
-    { id: 'LN-701', employee: 'Michael K.', principal: 25000, formattedPrincipal: '₵ 25,000', term: '18 Months', interestRate: '5.0%', monthlyInstallmentNum: 1458, monthlyInstallment: '₵ 1,458 / mo', remainingBal: 15000, formattedBal: '₵ 15,000', guarantor: 'Louis Kemenyo', purpose: 'Land acquisition in Dodowa', status: 'Active Amortization', dateDisbursed: '10 Jan 2026' },
-    { id: 'LN-702', employee: 'Sarah Osei', principal: 12000, formattedPrincipal: '₵ 12,000', term: '12 Months', interestRate: '3.5%', monthlyInstallmentNum: 1035, monthlyInstallment: '₵ 1,035 / mo', remainingBal: 8000, formattedBal: '₵ 8,000', guarantor: 'Louis Kemenyo', purpose: 'Solar battery inverter setup', status: 'Active Amortization', dateDisbursed: '01 Mar 2026' },
-  ]);
+  const [loansList, setLoansList] = useState(() => getStoredStaffLoans());
 
   // 5. Monthly Salary Runs State (Payroll Logs)
   const [payrollRunsList, setPayrollRunsList] = useState([
@@ -504,7 +261,10 @@ const HR = () => {
     });
 
     setStaffList(updatedStaff);
-    setAttendanceLogsList([...newLogs, ...attendanceLogsList]);
+    saveStoredStaffEmployees(updatedStaff);
+    const updatedAtt = [...newLogs, ...attendanceLogsList];
+    setAttendanceLogsList(updatedAtt);
+    saveStoredStaffAttendance(updatedAtt);
     setShowTakeAttendanceModal(false);
     setSuccessMsg(`Daily attendance roster for ${formattedCheckDate} officially recorded and cumulative metrics updated!`);
     setTimeout(() => setSuccessMsg(''), 4500);
@@ -564,7 +324,9 @@ const HR = () => {
       sanctionsCount: 0
     };
 
-    setStaffList([newEmp, ...staffList]);
+    const updated = [newEmp, ...staffList];
+    setStaffList(updated);
+    saveStoredStaffEmployees(updated);
     setShowOnboardModal(false);
     setPassportPreview(null);
     setGhanaCardFrontPreview(null);
@@ -590,7 +352,9 @@ const HR = () => {
       status: 'Pending Sign-off',
       approvedBy: 'Pending'
     };
-    setLeavesList([newLeave, ...leavesList]);
+    const updatedLeaves = [newLeave, ...leavesList];
+    setLeavesList(updatedLeaves);
+    saveStoredStaffLeaves(updatedLeaves);
     setShowLeaveModal(false);
     setSuccessMsg(`Leave request for ${newLeave.employee} recorded successfully.`);
     setTimeout(() => setSuccessMsg(''), 4000);
@@ -630,7 +394,7 @@ const HR = () => {
 
     setPayrollRunsList(payrollRunsList.map(run => run.id === id ? { ...run, status: 'Approved & Disbursed' } : run));
     
-    setLoansList(loansList.map(loan => {
+    const updatedLoans = loansList.map(loan => {
       if (loan.status === 'Active Amortization' && loan.remainingBal > 0) {
         const newBal = Math.max(0, loan.remainingBal - loan.monthlyInstallmentNum);
         return {
@@ -641,7 +405,9 @@ const HR = () => {
         };
       }
       return loan;
-    }));
+    });
+    setLoansList(updatedLoans);
+    saveStoredStaffLoans(updatedLoans);
 
     setSuccessMsg(`Payroll run ${id} officially approved. Automated loan recovery deducted from employee balances.`);
     setTimeout(() => setSuccessMsg(''), 4500);
@@ -682,7 +448,9 @@ const HR = () => {
       status: 'Pending Underwriting',
       dateDisbursed: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
     };
-    setLoansList([newLoan, ...loansList]);
+    const updatedLoans = [newLoan, ...loansList];
+    setLoansList(updatedLoans);
+    saveStoredStaffLoans(updatedLoans);
     setShowLoanModal(false);
     setSuccessMsg(`Staff loan request for ${newLoan.employee} logged for underwriting audit.`);
     setTimeout(() => setSuccessMsg(''), 4000);
@@ -726,6 +494,72 @@ const HR = () => {
 
   const openProfile = (emp) => {
     setSelectedStaffProfile(emp);
+    setIsEditingProfile(false);
+    
+    // Populate edit fields
+    setEditEmpName(emp.name || '');
+    setEditEmpRole(emp.role || '');
+    setEditEmpDept(emp.dept || 'Operations & Maintenance');
+    setEditEmpRank(emp.rank || 'Junior Staff (Grade 3)');
+    setEditEmpGhanaCard(emp.ghanaCardNo || 'GHA-');
+    setEditEmpEmail(emp.email || '');
+    setEditEmpPhone(emp.phone || '');
+    setEditEmpSalary(emp.salary || 0);
+    setEditEmpBankName(emp.bankName || '');
+    setEditEmpBankAccNo(emp.bankAccNo || '');
+    setEditEmpEmergencyName(emp.emergencyName || '');
+    setEditEmpEmergencyPhone(emp.emergencyPhone || '');
+    setEditEmpStatus(emp.status || 'Active');
+    setEditEmpContract(emp.contract || 'Permanent Full-time');
+  };
+
+  const handleEditProfileSubmit = (e) => {
+    e.preventDefault();
+    if (!selectedStaffProfile) return;
+    
+    const updatedEmp = {
+      ...selectedStaffProfile,
+      name: editEmpName,
+      role: editEmpRole,
+      dept: editEmpDept,
+      rank: editEmpRank,
+      ghanaCardNo: editEmpGhanaCard,
+      email: editEmpEmail,
+      phone: editEmpPhone,
+      salary: parseFloat(editEmpSalary) || 0,
+      formattedSalary: `₵ ${parseFloat(editEmpSalary).toLocaleString()} / mo`,
+      bankName: editEmpBankName,
+      bankAccNo: editEmpBankAccNo,
+      bankAccName: editEmpName, // acc name matches name by default
+      emergencyName: editEmpEmergencyName,
+      emergencyPhone: editEmpEmergencyPhone,
+      status: editEmpStatus,
+      contract: editEmpContract
+    };
+
+    const updatedList = staffList.map(emp => emp.id === selectedStaffProfile.id ? updatedEmp : emp);
+    setStaffList(updatedList);
+    saveStoredStaffEmployees(updatedList);
+    setSelectedStaffProfile(updatedEmp);
+    setIsEditingProfile(false);
+    setSuccessMsg(`Employee records updated successfully for ${updatedEmp.name}!`);
+    setTimeout(() => setSuccessMsg(''), 4500);
+  };
+
+  const handleDeleteEmployee = (userId) => {
+    const userToTerminate = staffList.find(u => u.id === userId);
+    if (!userToTerminate) return;
+    
+    const confirmed = window.confirm(`⚠️ ARE YOU ABSOLUTELY SURE?\nThis will permanently delete/terminate employee record for "${userToTerminate.name}" (${userId}). This action cannot be undone and will immediately revoke all access.`);
+    if (!confirmed) return;
+    
+    const updatedList = staffList.filter(u => u.id !== userId);
+    setStaffList(updatedList);
+    saveStoredStaffEmployees(updatedList);
+    setSelectedStaffProfile(null);
+    setIsEditingProfile(false);
+    setSuccessMsg(`Employee record for ${userToTerminate.name} has been permanently terminated and deleted.`);
+    setTimeout(() => setSuccessMsg(''), 4500);
   };
 
   const triggerPrintIDTag = (emp) => {
@@ -2193,132 +2027,345 @@ const HR = () => {
                     <p style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: '600', margin: '2px 0 0' }}>{selectedStaffProfile.role} • {selectedStaffProfile.dept}</p>
                   </div>
                 </div>
-                <button onClick={() => setSelectedStaffProfile(null)} style={{ background: '#f1f5f9', border: 'none', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                  <X size={20} />
-                </button>
-              </div>
-
-              {/* Financial & Direct Deposit Summary */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
-                <div style={{ padding: '20px', background: '#f8fafc', borderRadius: '20px', border: '1px solid var(--border-dark)' }}>
-                  <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Compensation Package</span>
-                  <span style={{ fontSize: '22px', fontWeight: '900', color: 'var(--primary)', display: 'block' }}>{selectedStaffProfile.formattedSalary}</span>
-                  <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600', marginTop: '4px', display: 'block' }}>{selectedStaffProfile.contract}</span>
-                </div>
-
-                <div style={{ padding: '20px', background: '#f8fafc', borderRadius: '20px', border: '1px solid var(--border-dark)' }}>
-                  <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Direct ACH Banking Setup</span>
-                  <span style={{ fontSize: '16px', fontWeight: '900', color: 'var(--text-main)', display: 'block' }}>{selectedStaffProfile.bankName}</span>
-                  <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', marginTop: '2px', display: 'block' }}>Acc: {selectedStaffProfile.bankAccNo}</span>
-                </div>
-              </div>
-
-              {/* Emergency Contact & Biometric Info */}
-              <div style={{ background: '#fef8f2', border: '1px solid #fed7aa', padding: '20px', borderRadius: '20px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                  <PhoneCall size={24} style={{ color: '#ea580c' }} />
-                  <div>
-                    <span style={{ fontSize: '11px', fontWeight: '800', color: '#ea580c', textTransform: 'uppercase', display: 'block' }}>Emergency Contact Person</span>
-                    <span style={{ fontSize: '16px', fontWeight: '900', color: '#431407', display: 'block', marginTop: '2px' }}>{selectedStaffProfile.emergencyName}</span>
-                    <span style={{ fontSize: '13px', fontWeight: '700', color: '#9a3412', display: 'block' }}>Phone: {selectedStaffProfile.emergencyPhone}</span>
-                  </div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block' }}>Ghana Card PIN</span>
-                  <span style={{ fontSize: '14px', fontWeight: '800', color: 'var(--primary)' }}>{selectedStaffProfile.ghanaCardNo}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {!isEditingProfile ? (
+                    <>
+                      <button
+                        onClick={() => setIsEditingProfile(true)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', borderRadius: '12px', border: '1px solid #cbd5e1', background: 'white', color: '#334155', fontWeight: '800', fontSize: '13px', cursor: 'pointer', transition: '0.2s' }}
+                      >
+                        <Edit2 size={15} /> Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteEmployee(selectedStaffProfile.id)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', borderRadius: '12px', border: '1px solid #fee2e2', background: '#fef2f2', color: '#ef4444', fontWeight: '800', fontSize: '13px', cursor: 'pointer', transition: '0.2s' }}
+                      >
+                        <Trash2 size={15} /> Delete
+                      </button>
+                    </>
+                  ) : null}
+                  <button onClick={() => { setSelectedStaffProfile(null); setIsEditingProfile(false); }} style={{ background: '#f1f5f9', border: 'none', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                    <X size={20} />
+                  </button>
                 </div>
               </div>
 
-              {/* Verified ID Document Images Preview & Local Upload */}
-              <div style={{ background: 'white', border: '1px solid var(--border-dark)', padding: '20px', borderRadius: '20px', marginBottom: '24px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                  <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                    Verified Ghana Card Images (Front & Back)
-                  </span>
-                  <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--primary)', background: '#ecfdf5', padding: '4px 10px', borderRadius: '20px', border: '1px solid #a7f3d0' }}>
-                    Click either card to upload new scan
-                  </span>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <label style={{ height: '150px', borderRadius: '16px', overflow: 'hidden', border: '2px dashed #cbd5e1', background: '#f8fafc', cursor: 'pointer', position: 'relative', display: 'block', transition: '0.2s', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)' }} title="Click to upload Front ID from local device">
-                    <img src={selectedStaffProfile.ghanaCardFront} alt="Ghana Card Front" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', opacity: 0, transition: '0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white' }} onMouseEnter={(e) => e.currentTarget.style.opacity = 1} onMouseLeave={(e) => e.currentTarget.style.opacity = 0}>
-                      <UploadCloud size={28} style={{ marginBottom: '4px' }} />
-                      <span style={{ fontSize: '12px', fontWeight: '800' }}>Update Front Scan</span>
+              {isEditingProfile ? (
+                <form onSubmit={handleEditProfileSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {/* Grid fields */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Full Name</label>
+                      <input
+                        type="text"
+                        required
+                        value={editEmpName}
+                        onChange={(e) => setEditEmpName(e.target.value)}
+                        style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-dark)', fontSize: '14px', fontWeight: '600', boxSizing: 'border-box' }}
+                      />
                     </div>
-                    <input type="file" accept="image/*" onChange={(e) => handleUpdateProfileGhanaCard(e, 'front')} style={{ display: 'none' }} />
-                  </label>
-                  
-                  <label style={{ height: '150px', borderRadius: '16px', overflow: 'hidden', border: '2px dashed #cbd5e1', background: '#f8fafc', cursor: 'pointer', position: 'relative', display: 'block', transition: '0.2s', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)' }} title="Click to upload Back ID from local device">
-                    <img src={selectedStaffProfile.ghanaCardBack} alt="Ghana Card Back" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', opacity: 0, transition: '0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white' }} onMouseEnter={(e) => e.currentTarget.style.opacity = 1} onMouseLeave={(e) => e.currentTarget.style.opacity = 0}>
-                      <UploadCloud size={28} style={{ marginBottom: '4px' }} />
-                      <span style={{ fontSize: '12px', fontWeight: '800' }}>Update Back Scan</span>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Professional Title / Role</label>
+                      <input
+                        type="text"
+                        required
+                        value={editEmpRole}
+                        onChange={(e) => setEditEmpRole(e.target.value)}
+                        style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-dark)', fontSize: '14px', fontWeight: '600', boxSizing: 'border-box' }}
+                      />
                     </div>
-                    <input type="file" accept="image/*" onChange={(e) => handleUpdateProfileGhanaCard(e, 'back')} style={{ display: 'none' }} />
-                  </label>
-                </div>
-              </div>
-
-              {/* Comprehensive Attendance Ledger Breakdown */}
-              <div style={{ background: 'white', border: '1px solid var(--border-dark)', padding: '20px', borderRadius: '20px', marginBottom: '28px' }}>
-                <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '16px' }}>
-                  Detailed Punctuality Breakdown ({selectedStaffProfile.attendanceRate} Score)
-                </span>
-                
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', textAlign: 'center' }}>
-                  <div style={{ padding: '12px', background: '#ecfdf5', borderRadius: '14px' }}>
-                    <span style={{ fontSize: '11px', fontWeight: '800', color: '#10b981', display: 'block', textTransform: 'uppercase' }}>Present</span>
-                    <span style={{ fontSize: '20px', fontWeight: '900', color: '#10b981', marginTop: '4px', display: 'block' }}>{selectedStaffProfile.daysPresent}</span>
                   </div>
 
-                  <div style={{ padding: '12px', background: '#fffbeb', borderRadius: '14px' }}>
-                    <span style={{ fontSize: '11px', fontWeight: '800', color: '#d97706', display: 'block', textTransform: 'uppercase' }}>Late Arrival</span>
-                    <span style={{ fontSize: '20px', fontWeight: '900', color: '#d97706', marginTop: '4px', display: 'block' }}>{selectedStaffProfile.daysLate}</span>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Department</label>
+                      <select
+                        value={editEmpDept}
+                        onChange={(e) => setEditEmpDept(e.target.value)}
+                        style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-dark)', fontSize: '14px', fontWeight: '600', background: 'white', boxSizing: 'border-box' }}
+                      >
+                        <option value="Executive Management">Executive Management</option>
+                        <option value="Sales & Leasing">Sales & Leasing</option>
+                        <option value="Finance & Accounts">Finance & Accounts</option>
+                        <option value="Operations & Maintenance">Operations & Maintenance</option>
+                        <option value="Compliance & Legal">Compliance & Legal</option>
+                        <option value="Security & Surveillance">Security & Surveillance</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Administrative Grade / Rank</label>
+                      <select
+                        value={editEmpRank}
+                        onChange={(e) => setEditEmpRank(e.target.value)}
+                        style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-dark)', fontSize: '14px', fontWeight: '600', background: 'white', boxSizing: 'border-box' }}
+                      >
+                        <option value="Executive Staff (Grade 1)">Executive Staff (Grade 1)</option>
+                        <option value="Senior Staff (Grade 2)">Senior Staff (Grade 2)</option>
+                        <option value="Junior Staff (Grade 3)">Junior Staff (Grade 3)</option>
+                        <option value="Subcontractor / Temporary">Subcontractor / Temporary</option>
+                      </select>
+                    </div>
                   </div>
 
-                  <div style={{ padding: '12px', background: '#e0e7ff', borderRadius: '14px' }}>
-                    <span style={{ fontSize: '11px', fontWeight: '800', color: '#4338ca', display: 'block', textTransform: 'uppercase' }}>On Leave</span>
-                    <span style={{ fontSize: '20px', fontWeight: '900', color: '#4338ca', marginTop: '4px', display: 'block' }}>{selectedStaffProfile.daysOnLeave}</span>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Email Address</label>
+                      <input
+                        type="email"
+                        required
+                        value={editEmpEmail}
+                        onChange={(e) => setEditEmpEmail(e.target.value)}
+                        style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-dark)', fontSize: '14px', fontWeight: '600', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Phone Contact</label>
+                      <input
+                        type="text"
+                        required
+                        value={editEmpPhone}
+                        onChange={(e) => setEditEmpPhone(e.target.value)}
+                        style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-dark)', fontSize: '14px', fontWeight: '600', boxSizing: 'border-box' }}
+                      />
+                    </div>
                   </div>
 
-                  <div style={{ padding: '12px', background: '#fef2f2', borderRadius: '14px' }}>
-                    <span style={{ fontSize: '11px', fontWeight: '800', color: '#ef4444', display: 'block', textTransform: 'uppercase' }}>Absent</span>
-                    <span style={{ fontSize: '20px', fontWeight: '900', color: '#ef4444', marginTop: '4px', display: 'block' }}>{selectedStaffProfile.daysAbsent}</span>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Monthly Salary (₵)</label>
+                      <input
+                        type="number"
+                        required
+                        value={editEmpSalary}
+                        onChange={(e) => setEditEmpSalary(e.target.value)}
+                        style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-dark)', fontSize: '14px', fontWeight: '600', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Ghana Card PIN</label>
+                      <input
+                        type="text"
+                        required
+                        value={editEmpGhanaCard}
+                        onChange={(e) => setEditEmpGhanaCard(e.target.value)}
+                        style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-dark)', fontSize: '14px', fontWeight: '600', boxSizing: 'border-box' }}
+                      />
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '32px' }}>
-                <div style={{ padding: '16px 20px', background: selectedStaffProfile.sanctionsCount > 0 ? '#fef2f2' : '#f8fafc', border: selectedStaffProfile.sanctionsCount > 0 ? '1px solid #fca5a5' : '1px solid var(--border-dark)', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <Ban size={20} style={{ color: selectedStaffProfile.sanctionsCount > 0 ? '#ef4444' : '#64748b' }} />
-                    <span style={{ fontSize: '14px', fontWeight: '800', color: selectedStaffProfile.sanctionsCount > 0 ? '#ef4444' : 'var(--text-main)' }}>Disciplinary Sanctions Registry</span>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Bank Setup</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Stanbic Bank"
+                        value={editEmpBankName}
+                        onChange={(e) => setEditEmpBankName(e.target.value)}
+                        style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-dark)', fontSize: '14px', fontWeight: '600', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Bank Account Number</label>
+                      <input
+                        type="text"
+                        placeholder="Acc Number"
+                        value={editEmpBankAccNo}
+                        onChange={(e) => setEditEmpBankAccNo(e.target.value)}
+                        style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-dark)', fontSize: '14px', fontWeight: '600', boxSizing: 'border-box' }}
+                      />
+                    </div>
                   </div>
-                  <span style={{ fontSize: '14px', fontWeight: '800', color: selectedStaffProfile.sanctionsCount > 0 ? '#ef4444' : 'var(--text-muted)' }}>
-                    {selectedStaffProfile.sanctionsCount} Recorded Infractions
-                  </span>
-                </div>
 
-                <div style={{ padding: '16px 20px', background: selectedStaffProfile.loansCount > 0 ? '#fffbeb' : '#f8fafc', border: selectedStaffProfile.loansCount > 0 ? '1px solid #fde68a' : '1px solid var(--border-dark)', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <Landmark size={20} style={{ color: selectedStaffProfile.loansCount > 0 ? '#d97706' : '#64748b' }} />
-                    <span style={{ fontSize: '14px', fontWeight: '800', color: selectedStaffProfile.loansCount > 0 ? '#d97706' : 'var(--text-main)' }}>Staff Credit Status</span>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Emergency Contact Name</label>
+                      <input
+                        type="text"
+                        value={editEmpEmergencyName}
+                        onChange={(e) => setEditEmpEmergencyName(e.target.value)}
+                        style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-dark)', fontSize: '14px', fontWeight: '600', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Emergency Contact Phone</label>
+                      <input
+                        type="text"
+                        value={editEmpEmergencyPhone}
+                        onChange={(e) => setEditEmpEmergencyPhone(e.target.value)}
+                        style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-dark)', fontSize: '14px', fontWeight: '600', boxSizing: 'border-box' }}
+                      />
+                    </div>
                   </div>
-                  <span style={{ fontSize: '14px', fontWeight: '800', color: selectedStaffProfile.loansCount > 0 ? '#d97706' : 'var(--text-muted)' }}>
-                    {selectedStaffProfile.loansCount > 0 ? 'Active Credit / Advance Account' : 'Zero Active Debt'}
-                  </span>
-                </div>
-              </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button
-                  onClick={() => setSelectedStaffProfile(null)}
-                  style={{ padding: '16px 32px', borderRadius: '16px', border: '1px solid var(--border-dark)', background: '#f1f5f9', color: '#334155', fontWeight: '800', fontSize: '15px', cursor: 'pointer' }}
-                >
-                  Close Profile
-                </button>
-              </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Employment Status</label>
+                      <select
+                        value={editEmpStatus}
+                        onChange={(e) => setEditEmpStatus(e.target.value)}
+                        style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-dark)', fontSize: '14px', fontWeight: '600', background: 'white', boxSizing: 'border-box' }}
+                      >
+                        <option value="Active">Active</option>
+                        <option value="On Leave">On Leave</option>
+                        <option value="Suspended">Suspended</option>
+                        <option value="Terminated">Terminated</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Contract Type</label>
+                      <select
+                        value={editEmpContract}
+                        onChange={(e) => setEditEmpContract(e.target.value)}
+                        style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-dark)', fontSize: '14px', fontWeight: '600', background: 'white', boxSizing: 'border-box' }}
+                      >
+                        <option value="Permanent Full-time">Permanent Full-time</option>
+                        <option value="Annual Contract">Annual Contract</option>
+                        <option value="Temporary / Subcontractor">Temporary / Subcontractor</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px', borderTop: '1px solid var(--border-dark)', paddingTop: '20px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingProfile(false)}
+                      style={{ padding: '14px 28px', borderRadius: '12px', border: '1px solid var(--border-dark)', background: '#f1f5f9', color: '#334155', fontWeight: '800', fontSize: '14px', cursor: 'pointer' }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      style={{ padding: '14px 32px', borderRadius: '12px', border: 'none', background: 'var(--primary)', color: 'white', fontWeight: '800', fontSize: '14px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0, 135, 90, 0.2)' }}
+                    >
+                      Save Changes
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <>
+                  {/* Financial & Direct Deposit Summary */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+                    <div style={{ padding: '20px', background: '#f8fafc', borderRadius: '20px', border: '1px solid var(--border-dark)' }}>
+                      <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Compensation Package</span>
+                      <span style={{ fontSize: '22px', fontWeight: '900', color: 'var(--primary)', display: 'block' }}>{selectedStaffProfile.formattedSalary}</span>
+                      <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600', marginTop: '4px', display: 'block' }}>{selectedStaffProfile.contract}</span>
+                    </div>
+
+                    <div style={{ padding: '20px', background: '#f8fafc', borderRadius: '20px', border: '1px solid var(--border-dark)' }}>
+                      <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Direct ACH Banking Setup</span>
+                      <span style={{ fontSize: '16px', fontWeight: '900', color: 'var(--text-main)', display: 'block' }}>{selectedStaffProfile.bankName}</span>
+                      <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', marginTop: '2px', display: 'block' }}>Acc: {selectedStaffProfile.bankAccNo}</span>
+                    </div>
+                  </div>
+
+                  {/* Emergency Contact & Biometric Info */}
+                  <div style={{ background: '#fef8f2', border: '1px solid #fed7aa', padding: '20px', borderRadius: '20px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                      <PhoneCall size={24} style={{ color: '#ea580c' }} />
+                      <div>
+                        <span style={{ fontSize: '11px', fontWeight: '800', color: '#ea580c', textTransform: 'uppercase', display: 'block' }}>Emergency Contact Person</span>
+                        <span style={{ fontSize: '16px', fontWeight: '900', color: '#431407', display: 'block', marginTop: '2px' }}>{selectedStaffProfile.emergencyName}</span>
+                        <span style={{ fontSize: '13px', fontWeight: '700', color: '#9a3412', display: 'block' }}>Phone: {selectedStaffProfile.emergencyPhone}</span>
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block' }}>Ghana Card PIN</span>
+                      <span style={{ fontSize: '14px', fontWeight: '800', color: 'var(--primary)' }}>{selectedStaffProfile.ghanaCardNo}</span>
+                    </div>
+                  </div>
+
+                  {/* Verified ID Document Images Preview & Local Upload */}
+                  <div style={{ background: 'white', border: '1px solid var(--border-dark)', padding: '20px', borderRadius: '20px', marginBottom: '24px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                        Verified Ghana Card Images (Front & Back)
+                      </span>
+                      <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--primary)', background: '#ecfdf5', padding: '4px 10px', borderRadius: '20px', border: '1px solid #a7f3d0' }}>
+                        Click either card to upload new scan
+                      </span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                      <label style={{ height: '150px', borderRadius: '16px', overflow: 'hidden', border: '2px dashed #cbd5e1', background: '#f8fafc', cursor: 'pointer', position: 'relative', display: 'block', transition: '0.2s', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)' }} title="Click to upload Front ID from local device">
+                        <img src={selectedStaffProfile.ghanaCardFront} alt="Ghana Card Front" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', opacity: 0, transition: '0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white' }} onMouseEnter={(e) => e.currentTarget.style.opacity = 1} onMouseLeave={(e) => e.currentTarget.style.opacity = 0}>
+                          <UploadCloud size={28} style={{ marginBottom: '4px' }} />
+                          <span style={{ fontSize: '12px', fontWeight: '800' }}>Update Front Scan</span>
+                        </div>
+                        <input type="file" accept="image/*" onChange={(e) => handleUpdateProfileGhanaCard(e, 'front')} style={{ display: 'none' }} />
+                      </label>
+                      
+                      <label style={{ height: '150px', borderRadius: '16px', overflow: 'hidden', border: '2px dashed #cbd5e1', background: '#f8fafc', cursor: 'pointer', position: 'relative', display: 'block', transition: '0.2s', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)' }} title="Click to upload Back ID from local device">
+                        <img src={selectedStaffProfile.ghanaCardBack} alt="Ghana Card Back" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', opacity: 0, transition: '0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white' }} onMouseEnter={(e) => e.currentTarget.style.opacity = 1} onMouseLeave={(e) => e.currentTarget.style.opacity = 0}>
+                          <UploadCloud size={28} style={{ marginBottom: '4px' }} />
+                          <span style={{ fontSize: '12px', fontWeight: '800' }}>Update Back Scan</span>
+                        </div>
+                        <input type="file" accept="image/*" onChange={(e) => handleUpdateProfileGhanaCard(e, 'back')} style={{ display: 'none' }} />
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Comprehensive Attendance Ledger Breakdown */}
+                  <div style={{ background: 'white', border: '1px solid var(--border-dark)', padding: '20px', borderRadius: '20px', marginBottom: '28px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '16px' }}>
+                      Detailed Punctuality Breakdown ({selectedStaffProfile.attendanceRate} Score)
+                    </span>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', textAlign: 'center' }}>
+                      <div style={{ padding: '12px', background: '#ecfdf5', borderRadius: '14px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: '800', color: '#10b981', display: 'block', textTransform: 'uppercase' }}>Present</span>
+                        <span style={{ fontSize: '20px', fontWeight: '900', color: '#10b981', marginTop: '4px', display: 'block' }}>{selectedStaffProfile.daysPresent}</span>
+                      </div>
+
+                      <div style={{ padding: '12px', background: '#fffbeb', borderRadius: '14px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: '800', color: '#d97706', display: 'block', textTransform: 'uppercase' }}>Late Arrival</span>
+                        <span style={{ fontSize: '20px', fontWeight: '900', color: '#d97706', marginTop: '4px', display: 'block' }}>{selectedStaffProfile.daysLate}</span>
+                      </div>
+
+                      <div style={{ padding: '12px', background: '#e0e7ff', borderRadius: '14px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: '800', color: '#4338ca', display: 'block', textTransform: 'uppercase' }}>On Leave</span>
+                        <span style={{ fontSize: '20px', fontWeight: '900', color: '#4338ca', marginTop: '4px', display: 'block' }}>{selectedStaffProfile.daysOnLeave}</span>
+                      </div>
+
+                      <div style={{ padding: '12px', background: '#fef2f2', borderRadius: '14px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: '800', color: '#ef4444', display: 'block', textTransform: 'uppercase' }}>Absent</span>
+                        <span style={{ fontSize: '20px', fontWeight: '900', color: '#ef4444', marginTop: '4px', display: 'block' }}>{selectedStaffProfile.daysAbsent}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '32px' }}>
+                    <div style={{ padding: '16px 20px', background: selectedStaffProfile.sanctionsCount > 0 ? '#fef2f2' : '#f8fafc', border: selectedStaffProfile.sanctionsCount > 0 ? '1px solid #fca5a5' : '1px solid var(--border-dark)', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <Ban size={20} style={{ color: selectedStaffProfile.sanctionsCount > 0 ? '#ef4444' : '#64748b' }} />
+                        <span style={{ fontSize: '14px', fontWeight: '800', color: selectedStaffProfile.sanctionsCount > 0 ? '#ef4444' : 'var(--text-main)' }}>Disciplinary Sanctions Registry</span>
+                      </div>
+                      <span style={{ fontSize: '14px', fontWeight: '800', color: selectedStaffProfile.sanctionsCount > 0 ? '#ef4444' : 'var(--text-muted)' }}>
+                        {selectedStaffProfile.sanctionsCount} Recorded Infractions
+                      </span>
+                    </div>
+
+                    <div style={{ padding: '16px 20px', background: selectedStaffProfile.loansCount > 0 ? '#fffbeb' : '#f8fafc', border: selectedStaffProfile.loansCount > 0 ? '1px solid #fde68a' : '1px solid var(--border-dark)', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <Landmark size={20} style={{ color: selectedStaffProfile.loansCount > 0 ? '#d97706' : '#64748b' }} />
+                        <span style={{ fontSize: '14px', fontWeight: '800', color: selectedStaffProfile.loansCount > 0 ? '#d97706' : 'var(--text-main)' }}>Staff Credit Status</span>
+                      </div>
+                      <span style={{ fontSize: '14px', fontWeight: '800', color: selectedStaffProfile.loansCount > 0 ? '#d97706' : 'var(--text-muted)' }}>
+                        {selectedStaffProfile.loansCount > 0 ? 'Active Credit / Advance Account' : 'Zero Active Debt'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <button
+                      onClick={() => setSelectedStaffProfile(null)}
+                      style={{ padding: '16px 32px', borderRadius: '16px', border: '1px solid var(--border-dark)', background: '#f1f5f9', color: '#334155', fontWeight: '800', fontSize: '15px', cursor: 'pointer' }}
+                    >
+                      Close Profile
+                    </button>
+                  </div>
+                </>
+              )}
             </motion.div>
           </div>
         )}

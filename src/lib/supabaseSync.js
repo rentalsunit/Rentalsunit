@@ -81,11 +81,30 @@ export const saveToSupabaseAndStorage = async (tableName, storageKey, items, dis
       id: item.id ? String(item.id) : `ID-${Math.floor(Math.random() * 900000)}`
     }));
 
+    // Perform upsert of all current items
     const { error } = await supabase.from(tableName).upsert(sanitized, { onConflict: 'id' });
     if (error) {
       console.warn(`[Supabase Sync] Background backup to '${tableName}' failed:`, error.message);
     } else {
       console.log(`[Supabase Sync] Successfully synchronized ${sanitized.length} records to '${tableName}'.`);
+    }
+
+    // Explicitly delete any records in Supabase that are no longer present in local state
+    const { data: existingRows, error: fetchError } = await supabase.from(tableName).select('id');
+    if (!fetchError && existingRows) {
+      const currentIds = sanitized.map(item => item.id);
+      const idsToDelete = existingRows
+        .map(row => String(row.id))
+        .filter(id => !currentIds.includes(id));
+      
+      if (idsToDelete.length > 0) {
+        const { error: deleteError } = await supabase.from(tableName).delete().in('id', idsToDelete);
+        if (deleteError) {
+          console.warn(`[Supabase Sync] Failed to delete omitted records from '${tableName}':`, deleteError.message);
+        } else {
+          console.log(`[Supabase Sync] Successfully deleted ${idsToDelete.length} omitted records from '${tableName}'.`);
+        }
+      }
     }
   } catch (err) {
     console.warn(`[Supabase Sync] Exception during cloud backup:`, err);
