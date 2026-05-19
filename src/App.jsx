@@ -18,6 +18,7 @@ import Settings from './modules/Settings';
 import HR from './modules/HR';
 import Login from './components/Login';
 import { AnimatePresence, motion } from 'framer-motion';
+import { initCloudSync } from './lib/masterData';
 
 function App() {
   const [activeCategory, setActiveCategory] = useState('overview');
@@ -27,6 +28,9 @@ function App() {
   });
 
   useEffect(() => {
+    // Automatically initialize cloud sync and seed Supabase tables if empty
+    initCloudSync().catch(err => console.warn('Supabase cloud auto-sync check:', err));
+
     const handleNav = (e) => {
       if (e.detail?.tab) {
         setActiveTab(e.detail.tab);
