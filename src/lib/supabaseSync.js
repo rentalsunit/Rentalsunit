@@ -486,8 +486,6 @@ CREATE TABLE IF NOT EXISTS vault_documents (
 );
 
 -- ==============================================================================
--- 18. DISABLE ROW LEVEL SECURITY (RLS) FOR SEAMLESS CLIENT API SYNCHRONIZATION
--- ==============================================================================
 ALTER TABLE users DISABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications DISABLE ROW LEVEL SECURITY;
 ALTER TABLE rental_properties DISABLE ROW LEVEL SECURITY;
@@ -505,4 +503,11 @@ ALTER TABLE financial_vouchers DISABLE ROW LEVEL SECURITY;
 ALTER TABLE staff_tasks DISABLE ROW LEVEL SECURITY;
 ALTER TABLE crm_prospects DISABLE ROW LEVEL SECURITY;
 ALTER TABLE vault_documents DISABLE ROW LEVEL SECURITY;
+
+-- ==============================================================================
+-- 19. GRANT EXPLICIT ACCESS PRIVILEGES TO CLIENT API ROLES
+-- ==============================================================================
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role;
 `;
