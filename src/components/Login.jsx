@@ -657,13 +657,6 @@ const Login = ({ onLogin }) => {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '11px', color: '#64748b', fontWeight: '600' }}>
-              <button
-                onClick={() => setShowSandbox(!showSandbox)}
-                type="button"
-                style={{ background: showSandbox ? '#ecfdf5' : '#f1f5f9', color: showSandbox ? '#00875a' : '#64748b', border: '1px solid #cbd5e1', padding: '6px 12px', borderRadius: '100px', fontSize: '11px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: '0.2s' }}
-              >
-                <Cpu size={14} /> {showSandbox ? 'Hide Personas' : 'Demo Mode'}
-              </button>
               <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Phone size={12} color="#00875a" /> 054 171 8716</span>
               <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Phone size={12} color="#00875a" /> 024 314 5384</span>
             </div>
