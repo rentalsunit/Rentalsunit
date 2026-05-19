@@ -67,7 +67,7 @@ const SupabaseManagerModal = ({ isOpen, onClose }) => {
                   </span>
                 </div>
                 <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600', display: 'block', marginTop: '4px' }}>
-                  Project: <strong style={{ color: '#059669' }}>oshvcebnnuisjdmtwttd.supabase.co</strong>
+                  Project: <strong style={{ color: '#059669' }}>{import.meta.env.VITE_SUPABASE_URL ? import.meta.env.VITE_SUPABASE_URL.replace('https://', '') : 'your-supabase-project.supabase.co'}</strong>
                 </span>
               </div>
             </div>
@@ -99,7 +99,7 @@ const SupabaseManagerModal = ({ isOpen, onClose }) => {
                 {copied ? 'SQL DDL Script Copied to Clipboard!' : 'Copy PostgreSQL Migration DDL Script'}
               </button>
               <a
-                href="https://oshvcebnnuisjdmtwttd.supabase.co"
+                href={import.meta.env.VITE_SUPABASE_URL || "https://supabase.com/dashboard"}
                 target="_blank"
                 rel="noreferrer"
                 style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', padding: '12px 24px', borderRadius: '16px', fontWeight: '800', fontSize: '14px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', transition: '0.2s' }}
