@@ -17,7 +17,7 @@ export const getLocalData = (key, fallback) => {
 /**
  * Synchronize a specific Supabase table with localStorage cache
  */
-export const syncTableWithStorage = async (tableName, storageKey, defaultData) => {
+export const syncTableWithStorage = async (tableName, storageKey, defaultData, dispatchEventName) => {
   try {
     const { data, error } = await supabase
       .from(tableName)
@@ -53,6 +53,9 @@ export const syncTableWithStorage = async (tableName, storageKey, defaultData) =
 
     // Cloud has data! Cache it locally
     localStorage.setItem(storageKey, JSON.stringify(data));
+    if (dispatchEventName) {
+      window.dispatchEvent(new Event(dispatchEventName));
+    }
     return data;
 
   } catch (err) {

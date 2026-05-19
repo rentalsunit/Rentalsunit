@@ -540,52 +540,22 @@ export const saveStoredVaultDocuments = (docs) => saveToSupabaseAndStorage('vaul
 
 export const initCloudSync = async () => {
   await Promise.all([
-    syncTableWithStorage('users', 'realtyos_users_list', defaultUsers),
-    syncTableWithStorage('notifications', 'realtyos_notifications', defaultNotifications),
-    syncTableWithStorage('rental_properties', 'realtyos_rental_properties', defaultRentalProperties).then(() => {
-      window.dispatchEvent(new Event('realtyos_rental_update'));
-    }),
-    syncTableWithStorage('rental_units', 'realtyos_rental_units', defaultRentalUnits).then(() => {
-      window.dispatchEvent(new Event('realtyos_rental_update'));
-    }),
-    syncTableWithStorage('tenants', 'realtyos_tenants', defaultTenants).then(() => {
-      window.dispatchEvent(new Event('realtyos_tenants_update'));
-    }),
-    syncTableWithStorage('rental_leases', 'realtyos_rental_leases', defaultLeases).then(() => {
-      window.dispatchEvent(new Event('realtyos_rental_update'));
-    }),
-    syncTableWithStorage('sales_properties', 'realtyos_sales_properties', defaultSalesProperties).then(() => {
-      window.dispatchEvent(new Event('realtyos_sales_props_update'));
-    }),
-    syncTableWithStorage('sales_deals', 'realtyos_sales_deals', defaultSalesDeals).then(() => {
-      window.dispatchEvent(new Event('realtyos_sales_deals_update'));
-    }),
-    syncTableWithStorage('maintenance_tickets', 'realtyos_maintenance_tickets', defaultMaintenanceTickets).then(() => {
-      window.dispatchEvent(new Event('maintenance_tickets_updated'));
-    }),
-    syncTableWithStorage('staff_employees', 'realtyos_staff_employees', defaultStaffEmployees).then(() => {
-      window.dispatchEvent(new Event('realtyos_staff_update'));
-    }),
-    syncTableWithStorage('staff_leaves', 'realtyos_staff_leaves', defaultStaffLeaves).then(() => {
-      window.dispatchEvent(new Event('realtyos_staff_update'));
-    }),
-    syncTableWithStorage('staff_attendance', 'realtyos_staff_attendance', defaultStaffAttendance).then(() => {
-      window.dispatchEvent(new Event('realtyos_staff_update'));
-    }),
-    syncTableWithStorage('staff_loans', 'realtyos_staff_loans', defaultStaffLoans).then(() => {
-      window.dispatchEvent(new Event('realtyos_staff_update'));
-    }),
-    syncTableWithStorage('financial_vouchers', 'realtyos_financial_vouchers', defaultFinancialVouchers).then(() => {
-      window.dispatchEvent(new Event('realtyos_finance_update'));
-    }),
-    syncTableWithStorage('staff_tasks', 'realtyos_staff_tasks', defaultStaffTasks).then(() => {
-      window.dispatchEvent(new Event('realtyos_tasks_update'));
-    }),
-    syncTableWithStorage('crm_prospects', 'realtyos_crm_prospects', defaultCrmProspects).then(() => {
-      window.dispatchEvent(new Event('realtyos_buyers_update'));
-    }),
-    syncTableWithStorage('vault_documents', 'realtyos_vault_documents', defaultVaultDocuments).then(() => {
-      window.dispatchEvent(new Event('realtyos_docs_update'));
-    })
+    syncTableWithStorage('users', 'realtyos_users_list', defaultUsers, 'realtyos_users_update'),
+    syncTableWithStorage('notifications', 'realtyos_notifications', defaultNotifications, 'realtyos_notifs_update'),
+    syncTableWithStorage('rental_properties', 'realtyos_rental_properties', defaultRentalProperties, 'realtyos_rental_update'),
+    syncTableWithStorage('rental_units', 'realtyos_rental_units', defaultRentalUnits, 'realtyos_rental_update'),
+    syncTableWithStorage('tenants', 'realtyos_tenants', defaultTenants, 'realtyos_tenants_update'),
+    syncTableWithStorage('rental_leases', 'realtyos_rental_leases', defaultLeases, 'realtyos_rental_update'),
+    syncTableWithStorage('sales_properties', 'realtyos_sales_properties', defaultSalesProperties, 'realtyos_sales_props_update'),
+    syncTableWithStorage('sales_deals', 'realtyos_sales_deals', defaultSalesDeals, 'realtyos_sales_deals_update'),
+    syncTableWithStorage('maintenance_tickets', 'realtyos_maintenance_tickets', defaultMaintenanceTickets, 'maintenance_tickets_updated'),
+    syncTableWithStorage('staff_employees', 'realtyos_staff_employees', defaultStaffEmployees, 'realtyos_staff_update'),
+    syncTableWithStorage('staff_leaves', 'realtyos_staff_leaves', defaultStaffLeaves, 'realtyos_staff_update'),
+    syncTableWithStorage('staff_attendance', 'realtyos_staff_attendance', defaultStaffAttendance, 'realtyos_staff_update'),
+    syncTableWithStorage('staff_loans', 'realtyos_staff_loans', defaultStaffLoans, 'realtyos_staff_update'),
+    syncTableWithStorage('financial_vouchers', 'realtyos_financial_vouchers', defaultFinancialVouchers, 'realtyos_finance_update'),
+    syncTableWithStorage('staff_tasks', 'realtyos_staff_tasks', defaultStaffTasks, 'realtyos_tasks_update'),
+    syncTableWithStorage('crm_prospects', 'realtyos_crm_prospects', defaultCrmProspects, 'realtyos_buyers_update'),
+    syncTableWithStorage('vault_documents', 'realtyos_vault_documents', defaultVaultDocuments, 'realtyos_docs_update')
   ]);
 };

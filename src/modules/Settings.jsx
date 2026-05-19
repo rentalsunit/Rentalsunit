@@ -63,11 +63,22 @@ const Settings = () => {
         } catch(e) {}
       }
     };
+    const handleUsersUpdate = () => {
+      const stored = getStoredUsers();
+      setSystemUsers(stored.map(u => ({
+        ...u,
+        lastLogin: u.lastLogin || 'Today',
+        status: u.status || 'Active',
+        twoFactor: u.twoFactor ?? true
+      })));
+    };
     window.addEventListener('realtyos_profile_updated', handleSync);
     window.addEventListener('storage', handleSync);
+    window.addEventListener('realtyos_users_update', handleUsersUpdate);
     return () => {
       window.removeEventListener('realtyos_profile_updated', handleSync);
       window.removeEventListener('storage', handleSync);
+      window.removeEventListener('realtyos_users_update', handleUsersUpdate);
     };
   }, []);
 
