@@ -277,17 +277,6 @@ const Header = ({ activeCategory, activeTab, setActiveTab }) => {
           />
         </div>
         
-        {/* --- CLOUD DATABASE STATUS PILL --- */}
-        <motion.button 
-          onClick={() => setShowSupabaseModal(true)}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '30px', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white', border: 'none', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)', cursor: 'pointer', flexShrink: 0, fontWeight: '800', fontSize: '13px' }}
-        >
-          <Database size={16} />
-          <span>Cloud DB</span>
-        </motion.button>
-        
         {/* --- NOTIFICATION BELL BUTTON --- */}
         <motion.button 
           onClick={() => setShowNotifModal(true)}
@@ -605,13 +594,6 @@ const Header = ({ activeCategory, activeTab, setActiveTab }) => {
         document.body
       )}
 
-      {/* ========================================================= */}
-      {/* DRAWER / MODAL 3: SUPABASE CLOUD CONNECTION MANAGER */}
-      {/* ========================================================= */}
-      {createPortal(
-        <SupabaseManagerModal isOpen={showSupabaseModal} onClose={() => setShowSupabaseModal(false)} />,
-        document.body
-      )}
     </header>
   );
 };
