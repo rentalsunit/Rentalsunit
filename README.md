@@ -1,16 +1,15 @@
-# React + Vite
+# RealtyOS Enterprise Property Management System
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+RealtyOS is an advanced, ultra-luxury real estate portfolio management and financial auditing platform built for high-end asset management, residential leasing, and commercial property operations.
 
-Currently, two official plugins are available:
+## Key Features
+- **Portfolio Command Center**: Real-time financial analytics, occupancy monitoring, and property yield metrics.
+- **Enterprise Ledger Vault**: Multi-channel payment tracking, mobile money integration, and automated voucher generation.
+- **Biometric Security & RBAC**: Granular role-based access control with secure evaluation modes.
+- **Cloud Database Sync**: Integrated PostgreSQL / Supabase synchronization with offline standalone resilience.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Live Production Deployment
+This system is continuously deployed and monitored via Vercel for high-availability cloud access.
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+---
+© 2026 RealtyOS Enterprise. All rights reserved. Architecture by Zerivon Tech.
