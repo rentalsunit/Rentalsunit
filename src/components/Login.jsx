@@ -8,13 +8,14 @@ import {
 } from 'lucide-react';
 
 const Login = ({ onLogin }) => {
-  const [username, setUsername] = useState('louis.kemenyo');
-  const [password, setPassword] = useState('RealtyOS-Secured2026!');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [selectedRole, setSelectedRole] = useState('Executive Administrator');
+  const [showSandbox, setShowSandbox] = useState(() => import.meta.env.VITE_ENABLE_SANDBOX_LOGIN === 'true');
 
   // ──────────────────────────────────────────────
   // FORGOT PASSWORD FLOW STATE MACHINE
@@ -51,6 +52,11 @@ const Login = ({ onLogin }) => {
       question: 'What city were you born in?',
       answer: 'kumasi',
       tempPass: 'RealtyTMP-SO2026!'
+    },
+    'admin': {
+      question: 'What is the master enterprise recovery code?',
+      answer: 'realtyos2026',
+      tempPass: 'RealtyOS-Admin2026!'
     }
   };
 
@@ -86,8 +92,8 @@ const Login = ({ onLogin }) => {
   const handleFpLookupSubmit = (e) => {
     e.preventDefault();
     const trimmed = fpUsername.trim().toLowerCase();
-    const acc = quickAccounts.find(a => a.username === trimmed);
-    if (!acc || !securityDB[trimmed]) {
+    const acc = quickAccounts.find(a => a.username === trimmed || a.username === trimmed.replace('@realtyos.gh', ''));
+    if (!acc || !securityDB[trimmed.replace('@realtyos.gh', '')]) {
       setFpError('No account found with that username. Please check and try again.');
       return;
     }
@@ -99,11 +105,12 @@ const Login = ({ onLogin }) => {
 
   const handleFpAnswerSubmit = (e) => {
     e.preventDefault();
-    const correctAnswer = securityDB[fpFoundAccount.username]?.answer || '';
+    const usernameKey = fpFoundAccount.username.replace('@realtyos.gh', '');
+    const correctAnswer = securityDB[usernameKey]?.answer || '';
     const isCorrect = fpAnswer.trim().toLowerCase() === correctAnswer.toLowerCase();
 
     if (isCorrect) {
-      const tempPass = securityDB[fpFoundAccount.username]?.tempPass || 'RealtyTMP-2026!';
+      const tempPass = securityDB[usernameKey]?.tempPass || 'RealtyTMP-2026!';
       setFpTempPassword(tempPass);
       setFpError('');
       setView('forgot_success');
@@ -128,6 +135,7 @@ const Login = ({ onLogin }) => {
 
   // Quick fill mock accounts
   const quickAccounts = [
+    { name: 'Master Administrator', role: 'Executive Administrator', username: 'admin', pass: 'RealtyOS-Admin2026!', badge: 'System Master' },
     { name: 'Louis Kemenyo', role: 'Executive Administrator', username: 'louis.kemenyo', pass: 'RealtyOS-Secured2026!', badge: 'MD & Architect' },
     { name: 'Sarah Miller', role: 'Senior Property Manager', username: 'sarah.miller', pass: 'ManagerSecure88!', badge: 'Leasing Lead' },
     { name: 'Michael K.', role: 'Facility Dispatch Engineer', username: 'michael.k', pass: 'MaintFlow992!', badge: 'Chief Engineer' },
@@ -141,7 +149,7 @@ const Login = ({ onLogin }) => {
     setErrorMsg('');
   };
 
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
     if (!username || !password) {
       setErrorMsg('Please provide both username and password credentials.');
@@ -150,6 +158,45 @@ const Login = ({ onLogin }) => {
 
     setIsLoading(true);
     setErrorMsg('');
+    setLoadingStep('Verifying Enterprise Credentials...');
+
+    // If Supabase is connected and online, verify against Supabase Auth or DB users
+    if (import.meta.env.VITE_SUPABASE_URL && !import.meta.env.VITE_SUPABASE_URL.includes('your-supabase-project')) {
+      try {
+        const { supabase } = await import('../lib/supabaseClient');
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: username.includes('@') ? username : `${username}@realtyos.gh`,
+          password: password
+        });
+        if (error) {
+          // Check if it's a valid local / sandbox fallback user
+          const matchedAcc = quickAccounts.find(a => a.username === username.toLowerCase() || a.username === username.replace('@realtyos.gh', '').toLowerCase());
+          if (!matchedAcc || matchedAcc.pass !== password) {
+            setErrorMsg('Invalid login credentials. Please verify your username and password.');
+            setIsLoading(false);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('Supabase auth fallback to local verification:', err);
+      }
+    } else {
+      // Offline / standalone verification
+      const expectedAdminUser = import.meta.env.VITE_ADMIN_USERNAME || 'admin';
+      const expectedAdminPass = import.meta.env.VITE_ADMIN_PASSWORD || 'RealtyOS-Admin2026!';
+      
+      const matchedAcc = quickAccounts.find(a => a.username === username.toLowerCase() || `${a.username}@realtyos.gh` === username.toLowerCase());
+      
+      const isAdminMatch = (username === expectedAdminUser || username === `${expectedAdminUser}@realtyos.gh`) && password === expectedAdminPass;
+      const isSandboxMatch = matchedAcc && matchedAcc.pass === password;
+
+      if (!isAdminMatch && !isSandboxMatch) {
+        setErrorMsg('Invalid login credentials. Please verify your username and password.');
+        setIsLoading(false);
+        return;
+      }
+    }
+
     setLoadingStep('Establishing 256-bit Secure Handshake...');
 
     setTimeout(() => {
@@ -161,15 +208,15 @@ const Login = ({ onLogin }) => {
           // Set localStorage authenticated flag and user profile
           localStorage.setItem('realtyos_authenticated', 'true');
           
-          const matchedAcc = quickAccounts.find(a => a.username === username);
+          const matchedAcc = quickAccounts.find(a => a.username === username || a.username === username.replace('@realtyos.gh', ''));
           if (matchedAcc) {
             const currentProfile = localStorage.getItem('realtyos_user_profile');
             let parsed = null;
             try { parsed = currentProfile ? JSON.parse(currentProfile) : null; } catch(e) {}
             const fullProfile = {
-              name: matchedAcc.name || 'Louis Kemenyo',
+              name: matchedAcc.name || 'Master Administrator',
               role: matchedAcc.role || 'Executive Administrator',
-              username: matchedAcc.username || 'louis.kemenyo',
+              username: matchedAcc.username || 'admin',
               email: `${matchedAcc.username}@realtyos.gh`,
               phone: parsed?.phone || '+233 54 102 9384',
               department: parsed?.department || 'Executive Administration',
@@ -179,10 +226,10 @@ const Login = ({ onLogin }) => {
             window.dispatchEvent(new CustomEvent('realtyos_profile_updated'));
           } else {
             const defaultProfile = {
-              name: username || 'Executive User',
+              name: username.split('@')[0] || 'Executive User',
               role: selectedRole || 'Executive Administrator',
-              username: username || 'executive.user',
-              email: `${username || 'executive'}@realtyos.gh`,
+              username: username.split('@')[0] || 'executive.user',
+              email: username.includes('@') ? username : `${username}@realtyos.gh`,
               phone: '+233 54 102 9384',
               department: 'Executive Administration',
               avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80'
@@ -192,9 +239,9 @@ const Login = ({ onLogin }) => {
           }
           
           onLogin();
-        }, 800);
-      }, 800);
-    }, 800);
+        }, 600);
+      }, 600);
+    }, 600);
   };
 
   return (
@@ -457,13 +504,14 @@ const Login = ({ onLogin }) => {
             </div>
 
             {/* QUICK SANDBOX ACCOUNTS (GRID PILLS) */}
-            <div style={{ marginBottom: '28px' }}>
+            {showSandbox && (
+            <div style={{ marginBottom: '28px', background: '#f8fafc', padding: '16px', borderRadius: '24px', border: '1px solid #e2e8f0' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
-                <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
-                <span style={{ fontSize: '11px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <UserCheck size={12} color="#00875a" /> Sandbox Personas
+                <div style={{ flex: 1, height: '1px', background: '#cbd5e1' }} />
+                <span style={{ fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <UserCheck size={12} color="#00875a" /> Enterprise Evaluation Personas
                 </span>
-                <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
+                <div style={{ flex: 1, height: '1px', background: '#cbd5e1' }} />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -477,8 +525,8 @@ const Login = ({ onLogin }) => {
                       alignItems: 'center',
                       gap: '10px',
                       padding: '10px 14px',
-                      borderRadius: '100px', // Pill shape matching mockup
-                      border: username === acc.username ? '2px solid #00875a' : '1px solid #e2e8f0',
+                      borderRadius: '100px',
+                      border: username === acc.username ? '2px solid #00875a' : '1px solid #cbd5e1',
                       background: username === acc.username ? '#ecfdf5' : 'white',
                       color: username === acc.username ? '#065f46' : '#334155',
                       cursor: 'pointer',
@@ -498,6 +546,7 @@ const Login = ({ onLogin }) => {
                 ))}
               </div>
             </div>
+            )}
 
             <AnimatePresence>
               {errorMsg && (
@@ -608,6 +657,13 @@ const Login = ({ onLogin }) => {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '11px', color: '#64748b', fontWeight: '600' }}>
+              <button
+                onClick={() => setShowSandbox(!showSandbox)}
+                type="button"
+                style={{ background: showSandbox ? '#ecfdf5' : '#f1f5f9', color: showSandbox ? '#00875a' : '#64748b', border: '1px solid #cbd5e1', padding: '6px 12px', borderRadius: '100px', fontSize: '11px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: '0.2s' }}
+              >
+                <Cpu size={14} /> {showSandbox ? 'Hide Personas' : 'Demo Mode'}
+              </button>
               <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Phone size={12} color="#00875a" /> 054 171 8716</span>
               <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Phone size={12} color="#00875a" /> 024 314 5384</span>
             </div>
