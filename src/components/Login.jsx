@@ -36,6 +36,8 @@ const Login = ({ onLogin }) => {
   const [firstLoginUser, setFirstLoginUser] = useState(null);
   const [flNewPass, setFlNewPass] = useState('');
   const [flConfirmPass, setFlConfirmPass] = useState('');
+  const [flSecQuestion, setFlSecQuestion] = useState('What was the name of your first school?');
+  const [flSecAnswer, setFlSecAnswer] = useState('');
   const [flError, setFlError] = useState('');
 
   // Security questions database — keyed by username
@@ -98,27 +100,69 @@ const Login = ({ onLogin }) => {
 
   const handleFpLookupSubmit = (e) => {
     e.preventDefault();
-    const trimmed = fpUsername.trim().toLowerCase();
-    const acc = quickAccounts.find(a => a.username === trimmed || a.username === trimmed.replace('@realtyos.gh', ''));
-    if (!acc || !securityDB[trimmed.replace('@realtyos.gh', '')]) {
+    const trimmed = fpUsername.trim().toLowerCase().replace('@realtyos.gh', '');
+    const allStoredUsers = getStoredUsers();
+    
+    // Find in master users cache first, fallback to quickAccounts
+    const foundUser = allStoredUsers.find(u => u.username?.toLowerCase() === trimmed || u.email?.toLowerCase().replace('@realtyos.gh', '') === trimmed) 
+      || quickAccounts.find(a => a.username === trimmed);
+      
+    if (!foundUser) {
       setFpError('No account found with that username. Please check and try again.');
       return;
     }
-    setFpFoundAccount(acc);
+
+    const secQuestion = foundUser.securityQuestion || securityDB[foundUser.username]?.question || 'What was the name of your first school?';
+    const secAnswer = foundUser.securityAnswer || securityDB[foundUser.username]?.answer || 'st augustine';
+
+    setFpFoundAccount({
+      ...foundUser,
+      questionToAsk: secQuestion,
+      answerToVerify: secAnswer
+    });
     setFpError('');
     setFpAttemptsLeft(3);
     setView('forgot_question');
   };
 
-  const handleFpAnswerSubmit = (e) => {
+  const handleFpAnswerSubmit = async (e) => {
     e.preventDefault();
-    const usernameKey = fpFoundAccount.username.replace('@realtyos.gh', '');
-    const correctAnswer = securityDB[usernameKey]?.answer || '';
+    const correctAnswer = fpFoundAccount.answerToVerify || '';
     const isCorrect = fpAnswer.trim().toLowerCase() === correctAnswer.toLowerCase();
 
     if (isCorrect) {
-      const tempPass = securityDB[usernameKey]?.tempPass || 'RealtyTMP-2026!';
-      setFpTempPassword(tempPass);
+      // Generate a new temporary PIN
+      const randomPin = Math.floor(1000 + Math.random() * 9000);
+      const newTempPass = `Realty-${randomPin}`;
+
+      const allStoredUsers = getStoredUsers();
+      const updatedUsers = allStoredUsers.map(u => {
+        if (u.username === fpFoundAccount.username || u.id === fpFoundAccount.id) {
+          return {
+            ...u,
+            isFirstLogin: true,
+            tempPassGiven: newTempPass,
+            pass: newTempPass,
+            status: 'Pending 1st Login'
+          };
+        }
+        return u;
+      });
+      saveStoredUsers(updatedUsers);
+
+      if (import.meta.env.VITE_SUPABASE_URL && !import.meta.env.VITE_SUPABASE_URL.includes('your-supabase-project')) {
+        try {
+          const { supabase } = await import('../lib/supabaseClient');
+          await supabase.from('users').update({
+            isFirstLogin: true,
+            tempPassGiven: newTempPass,
+            pass: newTempPass,
+            status: 'Pending 1st Login'
+          }).eq('username', fpFoundAccount.username);
+        } catch(err) { console.warn(err); }
+      }
+
+      setFpTempPassword(newTempPass);
       setFpError('');
       setView('forgot_success');
     } else {
@@ -271,11 +315,16 @@ const Login = ({ onLogin }) => {
       setFlError("Password must be at least 8 characters for enterprise security.");
       return;
     }
+    if (!flSecAnswer.trim()) {
+      setFlError("Please enter a confidential security answer for password recovery.");
+      return;
+    }
 
     setFlError("");
     setIsLoading(true);
     setLoadingStep("Updating Master Security Directory...");
 
+    const cleanAnswer = flSecAnswer.trim().toLowerCase();
     const allStoredUsers = getStoredUsers();
     const updatedUsers = allStoredUsers.map(u => {
       if (u.id === firstLoginUser.id || u.username === firstLoginUser.username) {
@@ -286,7 +335,9 @@ const Login = ({ onLogin }) => {
           isFirstLogin: false,
           status: 'Active',
           lastLogin: 'Just Now (Password Established)',
-          twoFactor: true
+          twoFactor: true,
+          securityQuestion: flSecQuestion,
+          securityAnswer: cleanAnswer
         };
       }
       return u;
@@ -301,7 +352,9 @@ const Login = ({ onLogin }) => {
           pass: flNewPass,
           tempPassGiven: null,
           isFirstLogin: false,
-          status: 'Active'
+          status: 'Active',
+          securityQuestion: flSecQuestion,
+          securityAnswer: cleanAnswer
         }).eq('username', firstLoginUser.username);
       } catch(err) { console.warn(err); }
     }
@@ -430,7 +483,7 @@ const Login = ({ onLogin }) => {
               <div>
                 <p style={{ fontSize: '12px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.8px', margin: '0 0 10px 0' }}>Security Question</p>
                 <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '16px', padding: '16px 20px', fontSize: '15px', fontWeight: '700', color: '#1e3a8a' }}>
-                  {securityDB[fpFoundAccount.username]?.question}
+                  {fpFoundAccount.questionToAsk}
                 </div>
               </div>
               {/* Attempt indicators */}
@@ -512,6 +565,31 @@ const Login = ({ onLogin }) => {
                     placeholder="Re-enter robust new password"
                     value={flConfirmPass}
                     onChange={e => setFlConfirmPass(e.target.value)}
+                    required
+                    style={{ width: '100%', padding: '16px 24px', borderRadius: '100px', border: '1.5px solid #cbd5e1', background: 'white', color: '#0f172a', fontSize: '14px', fontWeight: '600', outline: 'none', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <div style={{ borderTop: '1px solid #e2e8f0', marginTop: '4px', paddingTop: '14px' }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#00875a', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Account Recovery Security Question</label>
+                  <select
+                    value={flSecQuestion}
+                    onChange={e => setFlSecQuestion(e.target.value)}
+                    style={{ width: '100%', padding: '16px 24px', borderRadius: '100px', border: '1.5px solid #cbd5e1', background: 'white', color: '#0f172a', fontSize: '14px', fontWeight: '700', outline: 'none', boxSizing: 'border-box', marginBottom: '16px', appearance: 'none', cursor: 'pointer' }}
+                  >
+                    <option value="What was the name of your first school?">What was the name of your first school?</option>
+                    <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
+                    <option value="What city were you born in?">What city were you born in?</option>
+                    <option value="What was the name of your childhood best friend?">What was the name of your childhood best friend?</option>
+                    <option value="What is the name of your favorite pet?">What is the name of your favorite pet?</option>
+                  </select>
+
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#475569', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Security Answer</label>
+                  <input
+                    type="text"
+                    placeholder="Enter confidential security answer"
+                    value={flSecAnswer}
+                    onChange={e => setFlSecAnswer(e.target.value)}
                     required
                     style={{ width: '100%', padding: '16px 24px', borderRadius: '100px', border: '1.5px solid #cbd5e1', background: 'white', color: '#0f172a', fontSize: '14px', fontWeight: '600', outline: 'none', boxSizing: 'border-box' }}
                   />
