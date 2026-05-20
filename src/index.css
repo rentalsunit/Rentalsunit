@@ -173,7 +173,8 @@ body {
 /* Printable ID Card & Print Media Styling */
 @media print {
   /* 1. Hide all navigation, sidebars, headers, background blobs, animations, and action buttons */
-  .no-print, aside, header, nav, .liquid-blob, .sidebar, button {
+  .no-print, aside, header, nav, .liquid-blob, .sidebar, button,
+  .settings-header-banner, .settings-sidebar-nav {
     display: none !important;
   }
   
@@ -181,6 +182,7 @@ body {
   html, body, #root, main {
     background: white !important;
     margin: 0 !important;
+    margin-left: 0 !important; /* Collapse sidebar layout margins */
     padding: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
@@ -189,6 +191,133 @@ body {
     min-height: auto !important;
     box-shadow: none !important;
     border: none !important;
+  }
+
+  /* Collapse the main interior container spacing in print */
+  main > div {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  /* 3. Expand the Settings content grid to fill 100% printed page width */
+  .settings-grid-container {
+    display: block !important;
+    grid-template-columns: none !important;
+    gap: 0 !important;
+    width: 100% !important;
+  }
+
+  /* 4. Overhaul audit print container layout */
+  .audit-print-area {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 24px !important;
+    background: white !important;
+  }
+
+  .audit-print-area h3 {
+    font-size: 20pt !important;
+    color: #0f172a !important;
+    font-weight: 800 !important;
+    margin-bottom: 6px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+  }
+
+  .audit-print-subtitle {
+    font-size: 10pt !important;
+    color: #64748b !important;
+    font-weight: 600 !important;
+    display: block !important;
+    margin-bottom: 24px !important;
+  }
+
+  /* 5. Force audit timeline log items to expand vertically and form a clean vector ledger format */
+  .audit-logs-scrollbar {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding-right: 0 !important;
+    margin-top: 16px !important;
+    height: auto !important;
+  }
+
+  .audit-log-item {
+    background: #ffffff !important;
+    border: none !important;
+    border-bottom: 1.5px solid #cbd5e1 !important;
+    border-radius: 0 !important;
+    padding: 14px 0 !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    gap: 14px !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    box-shadow: none !important;
+  }
+
+  .audit-log-icon-container {
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 8px !important;
+    width: 32px !important;
+    height: 32px !important;
+    color: #475569 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+  }
+
+  .audit-log-header {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+
+  .audit-log-action {
+    font-size: 11pt !important;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+    display: inline-block !important;
+  }
+
+  .audit-log-time {
+    font-size: 9pt !important;
+    font-weight: 700 !important;
+    color: #94a3b8 !important;
+    display: inline-block !important;
+    text-align: right !important;
+  }
+
+  .audit-log-detail {
+    font-size: 10pt !important;
+    color: #475569 !important;
+    margin: 4px 0 6px 0 !important;
+    font-weight: 500 !important;
+    line-height: 1.4 !important;
+  }
+
+  .audit-log-user-tag {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 4px !important;
+  }
+
+  .audit-log-username {
+    font-size: 9pt !important;
+    font-weight: 800 !important;
+    color: #64748b !important;
+    display: inline-block !important;
   }
 
   /* 3. When a print modal is open, completely hide everything else inside main or body so ONLY the modal prints */
@@ -298,3 +427,23 @@ body {
   border-radius: 50%;
   animation: blinkDot 1.4s infinite ease-in-out;
 }
+
+/* Custom Scrollbar for Audit Log */
+.audit-logs-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+}
+
+@media print {
+  .audit-logs-scrollbar {
+    max-height: none !important;
+    overflow: visible !important;
+    padding-right: 0 !important;
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+

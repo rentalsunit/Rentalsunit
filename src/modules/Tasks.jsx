@@ -1,104 +1,33 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   CheckSquare, CheckCircle2, Clock, Calendar, Users, Plus, Search, 
   Filter, AlertCircle, User, ArrowRight, Building, Play, X, Award, FileText, Key
 } from 'lucide-react';
+import { getStoredStaffTasks, saveStoredStaffTasks, getStoredStaffEmployees } from '../lib/masterData';
 
 const Tasks = () => {
-  const [tasks, setTasks] = useState([
-    {
-      id: 'TSK-9001',
-      title: 'Conduct Full Move-In Inspection & Key Handover',
-      property: 'Sunset Luxury Apartments',
-      unit: 'Penthouse B',
-      assignedTo: 'Sarah Miller',
-      role: 'Leasing Specialist',
-      dueDate: '18 May 2026',
-      priority: 'High',
-      status: 'In Progress',
-      progress: 65,
-      description: 'Meet new VIP tenant Victoria K. on site. Walk through inventory check, test all smart home lighting controls, and issue 3 RFID access fobs.'
-    },
-    {
-      id: 'TSK-9002',
-      title: 'Quarterly Fire Safety Audit & Extinguisher Testing',
-      property: 'The Apex Commercial Tower',
-      unit: 'All Floors (1-15)',
-      assignedTo: 'David Wilson',
-      role: 'Safety Compliance Officer',
-      dueDate: '20 May 2026',
-      priority: 'Urgent',
-      status: 'Pending',
-      progress: 0,
-      description: 'Inspect all emergency exit stairwells, verify carbon monoxide sensors, and sign off on fire extinguisher pressure tags for insurance compliance.'
-    },
-    {
-      id: 'TSK-9003',
-      title: 'Draft Commercial Lease Agreement Renewal',
-      property: 'The Apex Commercial Tower',
-      unit: 'Anchor Retail Store G1',
-      assignedTo: 'Louis Kemenyo',
-      role: 'Portfolio Director',
-      dueDate: '22 May 2026',
-      priority: 'High',
-      status: 'In Progress',
-      progress: 80,
-      description: 'Review Melcom Superstores 3-year extension terms. Incorporate 8% annual rent escalation clause and update common area maintenance fee schedule.'
-    },
-    {
-      id: 'TSK-9004',
-      title: 'Verify Bank Wire Receipt & Issue Receipt Voucher',
-      property: 'Green Valley Estate',
-      unit: 'Plot 12',
-      assignedTo: 'Sarah Osei',
-      role: 'Senior Accountant',
-      dueDate: '16 May 2026',
-      priority: 'Medium',
-      status: 'Completed',
-      progress: 100,
-      description: 'Confirm SCB cheque clearance of ₵150,000 for Dr. Evelyn Addo. Post official transaction voucher to General Ledger.'
-    },
-    {
-      id: 'TSK-9005',
-      title: 'Supervise Solar Inverter & Battery Rack Installation',
-      property: 'Palm Breeze Residences',
-      unit: 'Roof Deck Utility Room',
-      assignedTo: 'Michael K.',
-      role: 'Chief Engineer',
-      dueDate: '25 May 2026',
-      priority: 'Medium',
-      status: 'Pending',
-      progress: 10,
-      description: 'Oversee mounting of 20kW hybrid solar inverter and lithium battery backup. Test auto-switchover under grid blackout simulation.'
-    },
-    {
-      id: 'TSK-9006',
-      title: 'Publish Monthly Landlord Financial Distribution Report',
-      property: 'Sunset Luxury Apartments',
-      unit: 'Portfolio General',
-      assignedTo: 'Sarah Osei',
-      role: 'Senior Accountant',
-      dueDate: '28 May 2026',
-      priority: 'High',
-      status: 'Pending',
-      progress: 25,
-      description: 'Compile net rental yield statements, deduct property management commission, and schedule ACH payouts to all registered unit investors.'
-    },
-    {
-      id: 'TSK-9007',
-      title: 'Landscaping & Tree Trimming Prior to Monsoon',
-      property: 'Green Valley Estate',
-      unit: 'Boulevard & Park 1',
-      assignedTo: 'Kofi Antwi',
-      role: 'Maintenance Technician',
-      dueDate: '14 May 2026',
-      priority: 'Low',
-      status: 'Completed',
-      progress: 100,
-      description: 'Prune overgrown palm fronds near overhead power lines and clear drainage gutters to prevent waterlogging during heavy rain storms.'
-    }
-  ]);
+  const [tasks, setTasks] = useState(() => {
+    return getStoredStaffTasks();
+  });
+
+  // Sync state when coming back from other modules or periodically
+  useEffect(() => {
+    const handleUpdate = () => {
+      setTasks(getStoredStaffTasks());
+    };
+    window.addEventListener('storage', handleUpdate);
+    window.addEventListener('realtyos_tasks_update', handleUpdate);
+    return () => {
+      window.removeEventListener('storage', handleUpdate);
+      window.removeEventListener('realtyos_tasks_update', handleUpdate);
+    };
+  }, []);
+
+  const saveTasks = (updated) => {
+    setTasks(updated);
+    saveStoredStaffTasks(updated);
+  };
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPriority, setFilterPriority] = useState('all');
@@ -107,19 +36,13 @@ const Tasks = () => {
   const [selectedTask, setSelectedTask] = useState(null);
   const [successMsg, setSuccessMsg] = useState('');
 
-  const staffEmployees = [
-    { name: 'Louis Kemenyo', role: 'Portfolio Director' },
-    { name: 'Sarah Miller', role: 'Head of Leasing' },
-    { name: 'Michael K.', role: 'Chief Facility Engineer' },
-    { name: 'Sarah Osei', role: 'Senior Portfolio Accountant' },
-    { name: 'David Wilson', role: 'Safety & Compliance Chief' },
-    { name: 'Kwame Mensah', role: 'Security Detail Lead' },
-    { name: 'Victoria Addo', role: 'Client Experience Executive' },
-    { name: 'Kofi Antwi', role: 'HVAC Specialist Technician' }
-  ];
+  const staffEmployees = useMemo(() => {
+    return getStoredStaffEmployees();
+  }, []);
 
   const handleStatusChange = (id, newStatus) => {
-    setTasks(tasks.map(t => t.id === id ? { ...t, status: newStatus, progress: newStatus === 'Completed' ? 100 : newStatus === 'In Progress' ? 50 : 0 } : t));
+    const updated = tasks.map(t => t.id === id ? { ...t, status: newStatus, progress: newStatus === 'Completed' ? 100 : newStatus === 'In Progress' ? 50 : 0 } : t);
+    saveTasks(updated);
     setSuccessMsg(`Task ${id} status updated to ${newStatus}.`);
     setTimeout(() => setSuccessMsg(''), 4000);
   };
@@ -144,7 +67,8 @@ const Tasks = () => {
       description: formData.get('description') || 'No specific instructions provided.'
     };
 
-    setTasks([newTask, ...tasks]);
+    const updated = [newTask, ...tasks];
+    saveTasks(updated);
     setShowAddModal(false);
     setSuccessMsg(`Task ${newTask.id} assigned to ${newTask.assignedTo}. Login access provisioned.`);
     setTimeout(() => setSuccessMsg(''), 4000);

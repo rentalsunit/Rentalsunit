@@ -13,7 +13,7 @@ export const getThemedAsset = (name = '', type = '', category = '') => {
     return {
       icon: '🏪 Shop / Store',
       tag: 'Retail Commercial',
-      image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=800&q=80',
+  
       description: 'Modern Commercial Retail Shop Front'
     };
   }
@@ -23,7 +23,7 @@ export const getThemedAsset = (name = '', type = '', category = '') => {
     return {
       icon: '🗺️ Land / Serviced Plot',
       tag: 'Serviced Acreage',
-      image: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80',
+  
       description: 'Scenic Green Land Parcel & Cadastral Acreage'
     };
   }
@@ -33,7 +33,7 @@ export const getThemedAsset = (name = '', type = '', category = '') => {
     return {
       icon: '🏢 Modern Apartment / Suite',
       tag: 'Residential High-Rise',
-      image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80',
+  
       description: 'Premium Modern Residential Complex'
     };
   }
@@ -43,7 +43,7 @@ export const getThemedAsset = (name = '', type = '', category = '') => {
     return {
       icon: '🏭 Industrial Warehouse / Depot',
       tag: 'Industrial Facility',
-      image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=800&q=80',
+  
       description: 'Modern High-Ceiling Logistics Facility & Warehouse'
     };
   }
@@ -53,7 +53,7 @@ export const getThemedAsset = (name = '', type = '', category = '') => {
     return {
       icon: '💼 Commercial Office Tower',
       tag: 'Corporate Complex',
-      image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80',
+  
       description: 'Sleek Corporate Glass & Steel Skyscraper'
     };
   }
@@ -63,7 +63,7 @@ export const getThemedAsset = (name = '', type = '', category = '') => {
     return {
       icon: '🏡 Executive House / Villa',
       tag: 'Luxury Standalone',
-      image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80',
+  
       description: 'Executive Luxury Villa with Enclosed Perimeter'
     };
   }
@@ -72,7 +72,7 @@ export const getThemedAsset = (name = '', type = '', category = '') => {
   return {
     icon: '🏢 Standard Property / Unit',
     tag: 'Premium Real Estate',
-    image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80',
+
     description: 'Certified Modern Architectural Real Estate Asset'
   };
 };

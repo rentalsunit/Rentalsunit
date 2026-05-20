@@ -1,10 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Users, UserPlus, Clock, ShieldCheck, DollarSign, Award, AlertTriangle, 
-  CheckCircle2, Search, Filter, Plus, FileText, X, Check, Eye, Briefcase, 
+import {
+  Users, UserPlus, Clock, ShieldCheck, DollarSign, Award, AlertTriangle,
+  CheckCircle2, Search, Filter, Plus, FileText, X, Check, Eye, Briefcase,
   Calendar, Star, Wallet, FileCheck, Ban, Landmark, Coins, Play, AlertCircle,
-  Lock, UserCheck, Calculator, LogIn, LogOut, Coffee, BarChart2, QrCode, 
+  Lock, UserCheck, Calculator, LogIn, LogOut, Coffee, BarChart2, QrCode,
   Printer, CreditCard, Camera, UploadCloud, PhoneCall, Building2, Download,
   Badge, Shield, Edit2, Trash2
 } from 'lucide-react';
@@ -14,18 +14,39 @@ import {
   getStoredStaffEmployees, saveStoredStaffEmployees,
   getStoredStaffLeaves, saveStoredStaffLeaves,
   getStoredStaffAttendance, saveStoredStaffAttendance,
-  getStoredStaffLoans, saveStoredStaffLoans
+  getStoredStaffLoans, saveStoredStaffLoans,
+  getStoredStaffPayroll, saveStoredStaffPayroll,
+  getStoredStaffSanctions, saveStoredStaffSanctions,
+  getStoredStaffAppraisals, saveStoredStaffAppraisals
 } from '../lib/masterData';
 
 const HR = () => {
   const [activeSubTab, setActiveSubTab] = useState('directory'); // directory, attendance, leaves, payroll, loans, sanctions, appraisals
+
+  // Live Cloud Synchronizer for HR Modules
+  useEffect(() => {
+    const handleSync = () => {
+      setStaffList(getStoredStaffEmployees());
+      setLeavesList(getStoredStaffLeaves());
+      setAttendanceLogsList(getStoredStaffAttendance());
+      setLoansList(getStoredStaffLoans());
+      setPayrollRunsList(getStoredStaffPayroll());
+      setSanctionsList(getStoredStaffSanctions());
+      setAppraisalsList(getStoredStaffAppraisals());
+    };
+
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('realtyos_staff_update', handleSync);
+
+    return () => {
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('realtyos_staff_update', handleSync);
+    };
+  }, []);
+
   const [successMsg, setSuccessMsg] = useState('');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-  
-  // Security Simulation: Toggle between HR Officer and Finance Director
-  const [currentUserRole, setCurrentUserRole] = useState('Finance Director'); // 'HR Officer' vs 'Finance Director'
 
-  // Selected Date for Attendance Roster View
   const [attendanceDate, setAttendanceDate] = useState('2026-05-17');
 
   // 1. Staff Directory State
@@ -64,20 +85,13 @@ const HR = () => {
   const [loansList, setLoansList] = useState(() => getStoredStaffLoans());
 
   // 5. Monthly Salary Runs State (Payroll Logs)
-  const [payrollRunsList, setPayrollRunsList] = useState([
-    { id: 'PAY-2026-05', monthYear: 'May 2026', totalStaff: 8, grossAmount: 103200, formattedGross: '₵ 103,200', loanDeductions: 2493, formattedDeductions: '-₵ 2,493', netAmount: 100707, formattedNet: '₵ 100,707', status: 'Pending Finance Sign-off', runDate: '16 May 2026', runBy: 'HR Officer (Sarah M.)' },
-    { id: 'PAY-2026-04', monthYear: 'April 2026', totalStaff: 8, grossAmount: 103200, formattedGross: '₵ 103,200', loanDeductions: 2493, formattedDeductions: '-₵ 2,493', netAmount: 100707, formattedNet: '₵ 100,707', status: 'Approved & Disbursed', runDate: '28 Apr 2026', runBy: 'Finance Director' },
-  ]);
+  const [payrollRunsList, setPayrollRunsList] = useState(() => getStoredStaffPayroll());
 
   // 6. Sanctions State
-  const [sanctionsList, setSanctionsList] = useState([
-    { id: 'SNC-901', employee: 'Kofi Antwi', date: '12 May 2026', infraction: 'Repeated Unexcused Tardiness & Absence', severity: 'Written Warning & Pay Dock', issuer: 'Michael K.', notes: 'Arrived 3 hours late to emergency water line repair without prior notification.' }
-  ]);
+  const [sanctionsList, setSanctionsList] = useState(() => getStoredStaffSanctions());
 
   // 7. Appraisals State
-  const [appraisalsList, setAppraisalsList] = useState([
-    { id: 'APR-501', employee: 'Sarah Miller', reviewer: 'Louis Kemenyo', date: '10 May 2026', rating: 4.9, keyAchievements: 'Exceeded Q1 luxury apartment leasing targets by 34%.', recommendation: 'Promote to Executive VP of Sales with 15% salary bump.' }
-  ]);
+  const [appraisalsList, setAppraisalsList] = useState(() => getStoredStaffAppraisals());
 
   // Search & Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -91,7 +105,7 @@ const HR = () => {
   const [showLoanModal, setShowLoanModal] = useState(false);
   const [showSanctionModal, setShowSanctionModal] = useState(false);
   const [showAppraisalModal, setShowAppraisalModal] = useState(false);
-  
+
   const [selectedStaffProfile, setSelectedStaffProfile] = useState(null);
   const [printableTagEmployee, setPrintableTagEmployee] = useState(null);
 
@@ -120,39 +134,109 @@ const HR = () => {
   const handleImageUpload = (e, setPreviewCallback) => {
     const file = e.target.files[0];
     if (file) {
-      const url = URL.createObjectURL(file);
-      setPreviewCallback(url);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 400;
+          const scaleSize = MAX_WIDTH / img.width;
+          canvas.width = MAX_WIDTH;
+          canvas.height = img.height * scaleSize;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          setPreviewCallback(compressedDataUrl);
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
     }
   };
 
   const handleUpdateProfileGhanaCard = (e, side) => {
     const file = e.target.files[0];
     if (file) {
-      const url = URL.createObjectURL(file);
-      const updatedProfile = { 
-        ...selectedStaffProfile, 
-        [side === 'front' ? 'ghanaCardFront' : 'ghanaCardBack']: url 
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 600;
+          const scaleSize = MAX_WIDTH / img.width;
+          canvas.width = MAX_WIDTH;
+          canvas.height = img.height * scaleSize;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const url = canvas.toDataURL('image/jpeg', 0.8);
+          
+          const updatedProfile = {
+            ...selectedStaffProfile,
+            [side === 'front' ? 'ghanaCardFront' : 'ghanaCardBack']: url
+          };
+          setSelectedStaffProfile(updatedProfile);
+          setStaffList(prevList => {
+            const newList = prevList.map(emp => emp.id === selectedStaffProfile.id ? updatedProfile : emp);
+            saveStoredStaffEmployees(newList);
+            return newList;
+          });
+          setSuccessMsg(`Ghana Card (${side === 'front' ? 'Front' : 'Back'}) updated successfully!`);
+          setTimeout(() => setSuccessMsg(''), 4000);
+        };
+        img.src = event.target.result;
       };
-      setSelectedStaffProfile(updatedProfile);
-      setStaffList(prevList => prevList.map(emp => emp.id === selectedStaffProfile.id ? updatedProfile : emp));
-      setSuccessMsg(`Ghana Card (${side === 'front' ? 'Front' : 'Back'}) updated successfully!`);
-      setTimeout(() => setSuccessMsg(''), 4000);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUpdatePassportPhoto = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 400;
+          const scaleSize = MAX_WIDTH / img.width;
+          canvas.width = MAX_WIDTH;
+          canvas.height = img.height * scaleSize;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const url = canvas.toDataURL('image/jpeg', 0.8);
+          
+          const updatedProfile = {
+            ...selectedStaffProfile,
+            passportPhoto: url
+          };
+          setSelectedStaffProfile(updatedProfile);
+          setStaffList(prevList => {
+            const newList = prevList.map(emp => emp.id === selectedStaffProfile.id ? updatedProfile : emp);
+            saveStoredStaffEmployees(newList);
+            return newList;
+          });
+          setSuccessMsg('Profile photo updated successfully!');
+          setTimeout(() => setSuccessMsg(''), 4000);
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
     }
   };
 
   const handleDownloadCardImage = async (format = 'png') => {
     const element = document.getElementById('printable-id-cards-container');
     if (!element) return;
-    
+
     try {
       setSuccessMsg(`Generating ultra high-resolution ${format.toUpperCase()} image...`);
-      const canvas = await html2canvas(element, { 
+      const canvas = await html2canvas(element, {
         scale: 3, // High DPI / Retina resolution
-        useCORS: true, 
+        useCORS: true,
         backgroundColor: '#ffffff',
         logging: false
       });
-      
+
       const imageURL = canvas.toDataURL(`image/${format}`, format === 'jpeg' ? 0.95 : undefined);
       const downloadLink = document.createElement('a');
       downloadLink.href = imageURL;
@@ -160,7 +244,7 @@ const HR = () => {
       document.body.appendChild(downloadLink);
       downloadLink.click();
       document.body.removeChild(downloadLink);
-      
+
       setSuccessMsg(`ID Card successfully saved as high-resolution ${format.toUpperCase()}!`);
       setTimeout(() => setSuccessMsg(''), 4000);
     } catch (err) {
@@ -271,7 +355,9 @@ const HR = () => {
   };
 
   const calculatedTotalGross = useMemo(() => {
-    return staffList.reduce((sum, emp) => sum + emp.salary, 0);
+    return staffList
+      .filter(emp => emp.dept !== 'Executive Management' && emp.role !== 'Portfolio Director')
+      .reduce((sum, emp) => sum + emp.salary, 0);
   }, [staffList]);
 
   const activeLoanDeductionsTotal = useMemo(() => {
@@ -288,7 +374,7 @@ const HR = () => {
     e.preventDefault();
     const formData = new FormData(e.target);
     const numSalary = parseFloat(formData.get('salary')) || 7500;
-    
+
     const newEmpID = generateShortEmployeeID();
     const fallbackPhoto = `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.get('name'))}&background=00875a&color=fff&size=400`;
 
@@ -332,7 +418,7 @@ const HR = () => {
     setGhanaCardFrontPreview(null);
     setGhanaCardBackPreview(null);
     setNewEmpGhanaCard('GHA-');
-    
+
     setSuccessMsg(`Successfully onboarded ${newEmp.name} (${newEmp.id}) as ${newEmp.role}! Automatic date and digital ID Tag generated.`);
     setTimeout(() => setSuccessMsg(''), 4500);
   };
@@ -368,7 +454,7 @@ const HR = () => {
     const newRun = {
       id: `PAY-2026-${monthYear.substring(0, 3).toUpperCase()}-${Date.now().toString().slice(-3)}`,
       monthYear: monthYear,
-      totalStaff: staffList.length,
+      totalStaff: staffList.filter(emp => emp.dept !== 'Executive Management' && emp.role !== 'Portfolio Director').length,
       grossAmount: calculatedTotalGross,
       formattedGross: `₵ ${calculatedTotalGross.toLocaleString()}`,
       loanDeductions: activeLoanDeductionsTotal,
@@ -377,23 +463,22 @@ const HR = () => {
       formattedNet: `₵ ${calculatedNetDisbursement.toLocaleString()}`,
       status: 'Pending Finance Sign-off',
       runDate: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
-      runBy: currentUserRole === 'Finance Director' ? 'Finance Director' : 'HR Officer'
+      runBy: 'Finance Director'
     };
 
-    setPayrollRunsList([newRun, ...payrollRunsList]);
+    const updatedPayroll = [newRun, ...payrollRunsList];
+    setPayrollRunsList(updatedPayroll);
+    saveStoredStaffPayroll(updatedPayroll);
     setShowPayrollModal(false);
     setSuccessMsg(`Payroll run for ${monthYear} calculated (Net: ₵${calculatedNetDisbursement.toLocaleString()}) and submitted to Finance for audit.`);
     setTimeout(() => setSuccessMsg(''), 4500);
   };
 
   const handleApprovePayroll = (id) => {
-    if (currentUserRole !== 'Finance Director') {
-      alert("🔒 Access Denied: Only the authorized Finance Officer / Accounting Director can approve or disburse payroll runs.");
-      return;
-    }
+    const updatedPayroll = payrollRunsList.map(run => run.id === id ? { ...run, status: 'Approved & Disbursed' } : run);
+    setPayrollRunsList(updatedPayroll);
+    saveStoredStaffPayroll(updatedPayroll);
 
-    setPayrollRunsList(payrollRunsList.map(run => run.id === id ? { ...run, status: 'Approved & Disbursed' } : run));
-    
     const updatedLoans = loansList.map(loan => {
       if (loan.status === 'Active Amortization' && loan.remainingBal > 0) {
         const newBal = Math.max(0, loan.remainingBal - loan.monthlyInstallmentNum);
@@ -414,11 +499,9 @@ const HR = () => {
   };
 
   const handleRejectPayroll = (id) => {
-    if (currentUserRole !== 'Finance Director') {
-      alert("🔒 Access Denied: Only the authorized Finance Officer / Accounting Director can reject payroll runs.");
-      return;
-    }
-    setPayrollRunsList(payrollRunsList.map(run => run.id === id ? { ...run, status: 'Rejected / Re-audit' } : run));
+    const updatedPayroll = payrollRunsList.map(run => run.id === id ? { ...run, status: 'Rejected / Re-audit' } : run);
+    setPayrollRunsList(updatedPayroll);
+    saveStoredStaffPayroll(updatedPayroll);
     setSuccessMsg(`Payroll run ${id} flagged and returned to HR for re-auditing.`);
     setTimeout(() => setSuccessMsg(''), 4000);
   };
@@ -429,9 +512,9 @@ const HR = () => {
     const principal = parseFloat(formData.get('principal')) || 0;
     const term = parseInt(formData.get('term')) || 12;
     const interest = parseFloat(formData.get('interestRate')) || 0;
-    
+
     const monthlyInstallmentNum = Math.round((principal * (1 + interest / 100)) / term);
-    
+
     const newLoan = {
       id: `LN-${700 + loansList.length + 1}`,
       employee: formData.get('employee'),
@@ -468,7 +551,9 @@ const HR = () => {
       issuer: 'Louis Kemenyo',
       notes: formData.get('notes')
     };
-    setSanctionsList([newSanction, ...sanctionsList]);
+    const updatedSanctions = [newSanction, ...sanctionsList];
+    setSanctionsList(updatedSanctions);
+    saveStoredStaffSanctions(updatedSanctions);
     setShowSanctionModal(false);
     setSuccessMsg(`Disciplinary sanction recorded for ${newSanction.employee}.`);
     setTimeout(() => setSuccessMsg(''), 4000);
@@ -486,7 +571,9 @@ const HR = () => {
       keyAchievements: formData.get('keyAchievements'),
       recommendation: formData.get('recommendation')
     };
-    setAppraisalsList([newAppr, ...appraisalsList]);
+    const updatedAppraisals = [newAppr, ...appraisalsList];
+    setAppraisalsList(updatedAppraisals);
+    saveStoredStaffAppraisals(updatedAppraisals);
     setShowAppraisalModal(false);
     setSuccessMsg(`Performance appraisal for ${newAppr.employee} successfully archived.`);
     setTimeout(() => setSuccessMsg(''), 4000);
@@ -495,7 +582,7 @@ const HR = () => {
   const openProfile = (emp) => {
     setSelectedStaffProfile(emp);
     setIsEditingProfile(false);
-    
+
     // Populate edit fields
     setEditEmpName(emp.name || '');
     setEditEmpRole(emp.role || '');
@@ -516,7 +603,7 @@ const HR = () => {
   const handleEditProfileSubmit = (e) => {
     e.preventDefault();
     if (!selectedStaffProfile) return;
-    
+
     const updatedEmp = {
       ...selectedStaffProfile,
       name: editEmpName,
@@ -549,10 +636,10 @@ const HR = () => {
   const handleDeleteEmployee = (userId) => {
     const userToTerminate = staffList.find(u => u.id === userId);
     if (!userToTerminate) return;
-    
+
     const confirmed = window.confirm(`⚠️ ARE YOU ABSOLUTELY SURE?\nThis will permanently delete/terminate employee record for "${userToTerminate.name}" (${userId}). This action cannot be undone and will immediately revoke all access.`);
     if (!confirmed) return;
-    
+
     const updatedList = staffList.filter(u => u.id !== userId);
     setStaffList(updatedList);
     saveStoredStaffEmployees(updatedList);
@@ -575,10 +662,10 @@ const HR = () => {
   const filteredStaff = useMemo(() => {
     return staffList.filter(s => {
       const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            s.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            s.dept.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            s.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            s.ghanaCardNo.toLowerCase().includes(searchTerm.toLowerCase());
+        s.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        s.dept.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        s.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        s.ghanaCardNo.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesDept = filterDept === 'all' || s.dept.toLowerCase() === filterDept.toLowerCase();
       return matchesSearch && matchesDept;
     });
@@ -606,7 +693,7 @@ const HR = () => {
   }, [filteredAttendanceLogs]);
 
   const metrics = useMemo(() => {
-    const activeStaff = staffList.filter(s => s.status === 'Active').length;
+    const activeStaff = staffList.filter(emp => emp.dept !== 'Executive Management' && emp.role !== 'Portfolio Director').length;
     const outstandingLoans = loansList.filter(l => l.status.includes('Active')).reduce((acc, l) => acc + l.remainingBal, 0);
     return { activeStaff, outstandingLoans };
   }, [staffList, loansList]);
@@ -622,10 +709,10 @@ const HR = () => {
   };
 
   return (
-    <motion.div 
-      variants={containerVariants} 
-      initial="hidden" 
-      animate="show" 
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
       style={{ display: 'flex', flexDirection: 'column', gap: '32px', width: '100%', boxSizing: 'border-box' }}
     >
       {/* Toast Banner */}
@@ -653,8 +740,8 @@ const HR = () => {
               <CheckCircle2 size={20} />
               <span>{successMsg}</span>
             </div>
-            <button 
-              onClick={() => setSuccessMsg('')} 
+            <button
+              onClick={() => setSuccessMsg('')}
               style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', opacity: 0.8 }}
             >
               <X size={18} />
@@ -670,19 +757,6 @@ const HR = () => {
             <span style={{ padding: '6px 12px', borderRadius: '20px', backgroundColor: 'var(--primary-glow)', color: 'var(--primary)', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1px', display: 'flex', alignItems: 'center', gap: '4px' }}>
               <Users size={12} /> Enterprise Human Resources & Workforce Hub
             </span>
-            
-            {/* Interactive Role Security Switcher */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'white', border: '1px solid var(--border-dark)', padding: '4px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: '800', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-              <Lock size={12} style={{ color: currentUserRole === 'Finance Director' ? '#10b981' : '#f59e0b' }} />
-              <span style={{ color: 'var(--text-muted)' }}>Simulated Security Role:</span>
-              <button 
-                onClick={() => setCurrentUserRole(currentUserRole === 'Finance Director' ? 'HR Officer' : 'Finance Director')}
-                title="Click to toggle security permissions between HR Officer and Finance Director"
-                style={{ background: currentUserRole === 'Finance Director' ? '#10b981' : '#f59e0b', color: 'white', border: 'none', padding: '2px 10px', borderRadius: '12px', fontSize: '10px', fontWeight: '800', cursor: 'pointer' }}
-              >
-                {currentUserRole} (Click to Switch)
-              </button>
-            </div>
           </div>
 
           <h2 style={{ fontSize: '28px', fontWeight: '800', letterSpacing: '-0.5px', color: 'var(--text-main)' }}>Human Capital Management</h2>
@@ -690,17 +764,17 @@ const HR = () => {
             Unified command for employee directory, daily attendance check-ins, leave vaults, automated payroll runs with live loan recoveries, and printable ID badges.
           </p>
         </div>
-        
+
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <motion.button 
+          <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setShowOnboardModal(true)}
-            style={{ 
-              backgroundColor: 'var(--primary)', color: 'white', border: 'none', 
-              padding: '12px 24px', borderRadius: '12px', display: 'flex', 
-              alignItems: 'center', gap: '10px', fontSize: '14px', fontWeight: '700', 
-              cursor: 'pointer', boxShadow: '0 10px 20px -5px rgba(0, 135, 90, 0.4)' 
+            style={{
+              backgroundColor: 'var(--primary)', color: 'white', border: 'none',
+              padding: '12px 24px', borderRadius: '12px', display: 'flex',
+              alignItems: 'center', gap: '10px', fontSize: '14px', fontWeight: '700',
+              cursor: 'pointer', boxShadow: '0 10px 20px -5px rgba(0, 135, 90, 0.4)'
             }}
           >
             <UserPlus size={20} /> Onboard New Employee
@@ -715,7 +789,7 @@ const HR = () => {
             <Users size={28} />
           </div>
           <div style={{ overflow: 'hidden' }}>
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>Total Active Workforce</p>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>Total Workforce</p>
             <h3 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-main)', marginTop: '4px' }}>
               {metrics.activeStaff} Staff
             </h3>
@@ -807,12 +881,12 @@ const HR = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
             <div style={{ position: 'relative', width: '100%', maxWidth: '380px' }}>
               <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-              <input 
-                type="text" 
+              <input
+                type="text"
                 placeholder="Search staff by name, ID, Ghana Card..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                style={{ width: '100%', padding: '14px 16px 14px 48px', borderRadius: '14px', border: '1px solid var(--border-dark)', fontSize: '13px', background: '#f8fafc', fontWeight: '500', outline: 'none' }} 
+                style={{ width: '100%', padding: '14px 16px 14px 48px', borderRadius: '14px', border: '1px solid var(--border-dark)', fontSize: '13px', background: '#f8fafc', fontWeight: '500', outline: 'none' }}
               />
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -830,22 +904,24 @@ const HR = () => {
           </div>
 
           {/* BEAUTIFUL PREMIUM EMPLOYEE BADGES GRID */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(310px, 1fr))', gap: '28px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(310px, 1fr))', gap: '28px' }}>
             {filteredStaff.map((emp) => (
-              <motion.div 
-                key={emp.id} 
+              <motion.div
+                key={emp.id}
                 variants={itemVariants}
                 whileHover={{ y: -6, boxShadow: '0 25px 50px -12px rgba(0, 135, 90, 0.15)' }}
-                style={{ 
-                  background: 'linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(248,250,252,0.95) 100%)', 
-                  borderRadius: '28px', 
-                  border: '1px solid rgba(0, 135, 90, 0.18)', 
+                style={{
+                  background: 'linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(248,250,252,0.95) 100%)',
+                  borderRadius: '28px',
+                  border: '1px solid rgba(0, 135, 90, 0.18)',
                   boxShadow: '0 15px 35px -10px rgba(0,0,0,0.08)',
                   overflow: 'hidden',
                   display: 'flex',
                   flexDirection: 'column',
                   position: 'relative',
-                  transition: 'all 0.3s ease'
+                  transition: 'all 0.3s ease',
+                  maxWidth: '380px',
+                  width: '100%'
                 }}
               >
                 {/* Emerald Header Strip with subtle background glow */}
@@ -909,7 +985,7 @@ const HR = () => {
                     >
                       <Eye size={16} style={{ color: 'var(--text-muted)' }} /> Dossier
                     </button>
-                    <button 
+                    <button
                       onClick={() => triggerPrintIDTag(emp)}
                       title="Print Official ID Tag (PDF / PNG)"
                       style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '12px', borderRadius: '16px', fontSize: '13px', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', boxShadow: '0 8px 20px -4px rgba(0, 135, 90, 0.4)', transition: 'all 0.2s' }}
@@ -934,21 +1010,21 @@ const HR = () => {
               <h3 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-main)' }}>Daily Workforce Attendance & Shift Timelogs</h3>
               <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '500', marginTop: '2px' }}>Real-time clock-in timestamps, automated leave detections, and punctuality scoring across corporate and property site locations.</p>
             </div>
-            
+
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f8fafc', border: '1px solid var(--border-dark)', padding: '6px 14px', borderRadius: '14px' }}>
                 <Calendar size={16} style={{ color: 'var(--text-muted)' }} />
                 <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-muted)' }}>Date:</span>
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   value={attendanceDate}
                   onChange={(e) => setAttendanceDate(e.target.value)}
                   style={{ border: 'none', background: 'transparent', fontSize: '13px', fontWeight: '800', color: 'var(--text-main)', cursor: 'pointer', outline: 'none' }}
                 />
               </div>
 
-              <button 
-                onClick={handleOpenTakeAttendanceModal} 
+              <button
+                onClick={handleOpenTakeAttendanceModal}
                 style={{ padding: '12px 24px', borderRadius: '12px', background: 'var(--primary)', color: 'white', border: 'none', fontWeight: '800', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 10px 20px -5px rgba(0, 135, 90, 0.4)' }}
               >
                 <Plus size={18} /> Record Daily Attendance Roster Check
@@ -1005,7 +1081,7 @@ const HR = () => {
                 <Calendar size={48} style={{ opacity: 0.3, marginBottom: '16px' }} />
                 <h4 style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '6px' }}>No Attendance Records Found for Selected Date</h4>
                 <p style={{ fontSize: '14px', maxWidth: '400px', margin: '0 auto 20px' }}>Click the button above to record the daily check-in roster and automatically verify staff leaves.</p>
-                <button 
+                <button
                   onClick={handleOpenTakeAttendanceModal}
                   style={{ padding: '10px 20px', borderRadius: '12px', background: 'var(--primary)', color: 'white', border: 'none', fontWeight: '800', fontSize: '14px', cursor: 'pointer' }}
                 >
@@ -1045,10 +1121,10 @@ const HR = () => {
                         {log.shiftHours}
                       </td>
                       <td style={{ padding: '18px 24px' }}>
-                        <span style={{ 
-                          padding: '6px 12px', 
-                          borderRadius: '20px', 
-                          fontSize: '11px', 
+                        <span style={{
+                          padding: '6px 12px',
+                          borderRadius: '20px',
+                          fontSize: '11px',
                           fontWeight: '800',
                           backgroundColor: log.status.includes('On Time') ? '#ecfdf5' : log.status.includes('Leave') ? '#e0e7ff' : log.status.includes('Late') ? '#fffbeb' : '#fef2f2',
                           color: log.status.includes('On Time') ? '#10b981' : log.status.includes('Leave') ? '#4338ca' : log.status.includes('Late') ? '#d97706' : '#ef4444',
@@ -1130,8 +1206,8 @@ const HR = () => {
               <h3 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-main)' }}>Employee Vacation & Leave Vault</h3>
               <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '500', marginTop: '2px' }}>Review and sign off on annual vacation entitlements, medical leave certificates, and emergency family absences.</p>
             </div>
-            <button 
-              onClick={() => setShowLeaveModal(true)} 
+            <button
+              onClick={() => setShowLeaveModal(true)}
               style={{ padding: '12px 20px', borderRadius: '12px', background: 'var(--primary)', color: 'white', border: 'none', fontWeight: '700', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 10px rgba(0, 135, 90, 0.2)' }}
             >
               <Plus size={18} /> Log New Leave Request
@@ -1168,10 +1244,10 @@ const HR = () => {
                       {lv.reason}
                     </td>
                     <td style={{ padding: '18px 24px' }}>
-                      <span style={{ 
-                        padding: '6px 12px', 
-                        borderRadius: '20px', 
-                        fontSize: '11px', 
+                      <span style={{
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
                         fontWeight: '800',
                         backgroundColor: lv.status === 'Approved' ? '#ecfdf5' : '#fffbeb',
                         color: lv.status === 'Approved' ? '#10b981' : '#d97706',
@@ -1180,7 +1256,7 @@ const HR = () => {
                         alignItems: 'center',
                         gap: '4px'
                       }}>
-                        {lv.status === 'Approved' ? <CheckCircle2 size={14}/> : <Clock size={14}/>}
+                        {lv.status === 'Approved' ? <CheckCircle2 size={14} /> : <Clock size={14} />}
                         {lv.status}
                       </span>
                     </td>
@@ -1219,25 +1295,15 @@ const HR = () => {
               <h3 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-main)' }}>Monthly Salary Calculations & Payroll Runs</h3>
               <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '500', marginTop: '2px' }}>Automatically compile active workforce salary packages, apply automated loan recovery deductions, and route for Finance Officer sign-off.</p>
             </div>
-            <button 
-              onClick={() => setShowPayrollModal(true)} 
+            <button
+              onClick={() => setShowPayrollModal(true)}
               style={{ padding: '12px 24px', borderRadius: '12px', background: 'var(--primary)', color: 'white', border: 'none', fontWeight: '800', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 10px 20px -5px rgba(0, 135, 90, 0.4)' }}
             >
               <Play size={18} fill="white" /> Run Monthly Payroll
             </button>
           </div>
 
-          <div style={{ background: currentUserRole === 'Finance Director' ? '#ecfdf5' : '#fffbeb', border: currentUserRole === 'Finance Director' ? '1px solid #10b98130' : '1px solid #f59e0b30', padding: '14px 20px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <Lock size={20} style={{ color: currentUserRole === 'Finance Director' ? '#10b981' : '#f59e0b' }} />
-            <div>
-              <span style={{ fontSize: '13px', fontWeight: '800', color: currentUserRole === 'Finance Director' ? '#10b981' : '#d97706', display: 'block' }}>
-                {currentUserRole === 'Finance Director' ? '🔓 Finance Director Access Active: Full Authorization to Sign-off Payouts' : '🔒 HR Officer Mode Active: View Only Permission on Final Payout Approvals'}
-              </span>
-              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                {currentUserRole === 'Finance Director' ? 'You have administrative clearance to approve or reject pending payroll calculations.' : 'Only the authorized Finance Officer / Accounting Director can sign off final bank disbursements.'}
-              </span>
-            </div>
-          </div>
+
 
           <div className="glass-card-premium" style={{ padding: '0', overflowX: 'auto', borderRadius: '24px', width: '100%' }}>
             <table style={{ width: '100%', minWidth: '950px', borderCollapse: 'collapse', textAlign: 'left' }}>
@@ -1274,10 +1340,10 @@ const HR = () => {
                       {pay.formattedNet}
                     </td>
                     <td style={{ padding: '18px 24px' }}>
-                      <span style={{ 
-                        padding: '6px 12px', 
-                        borderRadius: '20px', 
-                        fontSize: '11px', 
+                      <span style={{
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
                         fontWeight: '800',
                         backgroundColor: pay.status === 'Approved & Disbursed' ? '#ecfdf5' : pay.status === 'Rejected / Re-audit' ? '#fef2f2' : '#fffbeb',
                         color: pay.status === 'Approved & Disbursed' ? '#10b981' : pay.status === 'Rejected / Re-audit' ? '#ef4444' : '#d97706',
@@ -1291,15 +1357,15 @@ const HR = () => {
                         <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                           <button
                             onClick={() => handleApprovePayroll(pay.id)}
-                            title={currentUserRole === 'Finance Director' ? "Approve & Schedule ACH Payout" : "🔒 Only authorized Finance Officers can approve"}
-                            style={{ padding: '8px 14px', borderRadius: '10px', border: 'none', background: currentUserRole === 'Finance Director' ? '#10b981' : '#cbd5e1', color: 'white', fontWeight: '800', fontSize: '12px', cursor: currentUserRole === 'Finance Director' ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            title="Approve & Schedule ACH Payout"
+                            style={{ padding: '8px 14px', borderRadius: '10px', border: 'none', background: '#10b981', color: 'white', fontWeight: '800', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
                           >
                             <Check size={14} /> Approve
                           </button>
                           <button
                             onClick={() => handleRejectPayroll(pay.id)}
-                            title={currentUserRole === 'Finance Director' ? "Reject & Flag for Re-audit" : "🔒 Only authorized Finance Officers can reject"}
-                            style={{ padding: '8px 14px', borderRadius: '10px', border: 'none', background: currentUserRole === 'Finance Director' ? '#ef4444' : '#cbd5e1', color: 'white', fontWeight: '800', fontSize: '12px', cursor: currentUserRole === 'Finance Director' ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            title="Reject & Flag for Re-audit"
+                            style={{ padding: '8px 14px', borderRadius: '10px', border: 'none', background: '#ef4444', color: 'white', fontWeight: '800', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
                           >
                             <X size={14} /> Reject
                           </button>
@@ -1326,8 +1392,8 @@ const HR = () => {
               <h3 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-main)' }}>Amortized Staff Loans & Long-Term Credit Ledger</h3>
               <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '500', marginTop: '2px' }}>Medium to long-term employee credit structured over fixed terms with guarantor verification and automated payroll deductions.</p>
             </div>
-            <button 
-              onClick={() => setShowLoanModal(true)} 
+            <button
+              onClick={() => setShowLoanModal(true)}
               style={{ padding: '12px 20px', borderRadius: '12px', background: 'var(--primary)', color: 'white', border: 'none', fontWeight: '700', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 10px rgba(0, 135, 90, 0.2)' }}
             >
               <Plus size={18} /> Request Staff Loan
@@ -1372,10 +1438,10 @@ const HR = () => {
                       <span>{ln.purpose}</span>
                     </td>
                     <td style={{ padding: '18px 24px', textAlign: 'right' }}>
-                      <span style={{ 
-                        padding: '6px 12px', 
-                        borderRadius: '20px', 
-                        fontSize: '11px', 
+                      <span style={{
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
                         fontWeight: '800',
                         backgroundColor: ln.status === 'Fully Repaid' ? '#ecfdf5' : ln.status.includes('Active') ? '#e0e7ff' : '#fffbeb',
                         color: ln.status === 'Fully Repaid' ? '#10b981' : ln.status.includes('Active') ? '#4338ca' : '#d97706',
@@ -1399,8 +1465,8 @@ const HR = () => {
         <motion.div variants={containerVariants} initial="hidden" animate="show" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
             <h3 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-main)' }}>Disciplinary Sanctions & Warnings Registry</h3>
-            <button 
-              onClick={() => setShowSanctionModal(true)} 
+            <button
+              onClick={() => setShowSanctionModal(true)}
               style={{ padding: '12px 20px', borderRadius: '12px', background: '#ef4444', color: 'white', border: 'none', fontWeight: '700', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 10px rgba(239, 68, 68, 0.2)' }}
             >
               <Plus size={18} /> Record Disciplinary Action
@@ -1455,8 +1521,8 @@ const HR = () => {
         <motion.div variants={containerVariants} initial="hidden" animate="show" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
             <h3 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-main)' }}>Bi-Annual Performance Appraisals & KPI Reviews</h3>
-            <button 
-              onClick={() => setShowAppraisalModal(true)} 
+            <button
+              onClick={() => setShowAppraisalModal(true)}
               style={{ padding: '12px 20px', borderRadius: '12px', background: 'var(--primary)', color: 'white', border: 'none', fontWeight: '700', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 10px rgba(0, 135, 90, 0.2)' }}
             >
               <Plus size={18} /> Record Employee Review
@@ -1509,7 +1575,7 @@ const HR = () => {
       <AnimatePresence>
         {showOnboardModal && (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px', boxSizing: 'border-box' }}>
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -1537,7 +1603,7 @@ const HR = () => {
 
               {/* FORM BODY */}
               <form onSubmit={handleOnboardStaff} style={{ display: 'flex', flexDirection: 'column', gap: '28px', padding: '36px 40px', boxSizing: 'border-box' }}>
-                
+
                 {/* SECTION 1: BIOMETRIC FILES UPLOAD CONTAINER */}
                 <div style={{ background: 'white', borderRadius: '24px', border: '1px solid #cbd5e1', padding: '32px', boxShadow: '0 10px 25px -10px rgba(0,0,0,0.05)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px', borderBottom: '1px solid #f1f5f9', paddingBottom: '16px' }}>
@@ -1614,13 +1680,13 @@ const HR = () => {
                     </div>
                     <div>
                       <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px' }}>Ghana Card PIN / National ID</label>
-                      <input 
-                        type="text" 
-                        required 
-                        value={newEmpGhanaCard} 
-                        onChange={handleGhanaCardInputChange} 
-                        placeholder="GHA-718293819-2" 
-                        style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: '800', color: 'var(--primary)', outline: 'none', background: '#ecfdf5', boxSizing: 'border-box', letterSpacing: '0.5px' }} 
+                      <input
+                        type="text"
+                        required
+                        value={newEmpGhanaCard}
+                        onChange={handleGhanaCardInputChange}
+                        placeholder="GHA-718293819-2"
+                        style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: '800', color: 'var(--primary)', outline: 'none', background: '#ecfdf5', boxSizing: 'border-box', letterSpacing: '0.5px' }}
                       />
                     </div>
                     <div>
@@ -1764,8 +1830,8 @@ const HR = () => {
 
                 {/* MODAL FOOTER BUTTONS */}
                 <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '16px', marginTop: '16px' }}>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => setShowOnboardModal(false)}
                     style={{ padding: '16px 32px', borderRadius: '16px', border: '1px solid #cbd5e1', background: 'white', color: '#334155', fontWeight: '800', fontSize: '15px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}
                     onMouseEnter={(e) => e.currentTarget.style.background = '#f1f5f9'}
@@ -1773,7 +1839,7 @@ const HR = () => {
                   >
                     Cancel Dossier
                   </button>
-                  <button 
+                  <button
                     type="submit"
                     style={{ background: 'linear-gradient(135deg, #00875a 0%, #023825 100%)', color: 'white', border: 'none', padding: '16px 40px', borderRadius: '16px', fontSize: '15px', fontWeight: '800', cursor: 'pointer', boxShadow: '0 12px 25px -5px rgba(0, 135, 90, 0.4)', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '10px' }}
                     onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
@@ -1795,7 +1861,7 @@ const HR = () => {
       <AnimatePresence>
         {printableTagEmployee && (
           <div className="print-modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200, padding: '20px' }}>
-            <motion.div 
+            <motion.div
               className="print-modal-content"
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1819,7 +1885,7 @@ const HR = () => {
 
               {/* DUAL CARD CONTAINER (FRONT & BACK) */}
               <div id="printable-id-cards-container" style={{ display: 'flex', flexWrap: 'wrap', gap: '32px', justifyContent: 'center', width: '100%' }}>
-                
+
                 {/* --- FRONT CARD --- */}
                 <div id="printable-id-card-front" className="printable-card-unit" style={{ width: '360px', minHeight: '560px', borderRadius: '28px', background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)', border: '2px solid #cbd5e1', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.22)', overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative', boxSizing: 'border-box' }}>
                   {/* Background Watermark Crest */}
@@ -1860,7 +1926,7 @@ const HR = () => {
                     <span style={{ fontSize: '15px', fontWeight: '800', color: '#00875a', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px', display: 'block' }}>
                       {printableTagEmployee.role}
                     </span>
-                    
+
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '22px', flexWrap: 'wrap', justifyContent: 'center' }}>
                       <span style={{ padding: '5px 14px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '20px', fontSize: '11px', fontWeight: '800', color: '#334155', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                         {printableTagEmployee.dept}
@@ -2003,7 +2069,7 @@ const HR = () => {
       <AnimatePresence>
         {selectedStaffProfile && (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -2011,8 +2077,14 @@ const HR = () => {
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '28px', borderBottom: '1px solid var(--border-dark)', paddingBottom: '24px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                  <div style={{ width: '72px', height: '72px', borderRadius: '50%', overflow: 'hidden', border: '3px solid var(--primary)', flexShrink: 0 }}>
+                  <div style={{ width: '72px', height: '72px', borderRadius: '50%', overflow: 'hidden', border: '3px solid var(--primary)', flexShrink: 0, position: 'relative' }}>
                     <img src={selectedStaffProfile.passportPhoto} alt={selectedStaffProfile.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    {isEditingProfile && (
+                      <label style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}>
+                        <Camera size={20} />
+                        <input type="file" accept="image/*" onChange={handleUpdatePassportPhoto} style={{ display: 'none' }} />
+                      </label>
+                    )}
                   </div>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
@@ -2293,7 +2365,7 @@ const HR = () => {
                         </div>
                         <input type="file" accept="image/*" onChange={(e) => handleUpdateProfileGhanaCard(e, 'front')} style={{ display: 'none' }} />
                       </label>
-                      
+
                       <label style={{ height: '150px', borderRadius: '16px', overflow: 'hidden', border: '2px dashed #cbd5e1', background: '#f8fafc', cursor: 'pointer', position: 'relative', display: 'block', transition: '0.2s', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)' }} title="Click to upload Back ID from local device">
                         <img src={selectedStaffProfile.ghanaCardBack} alt="Ghana Card Back" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', opacity: 0, transition: '0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white' }} onMouseEnter={(e) => e.currentTarget.style.opacity = 1} onMouseLeave={(e) => e.currentTarget.style.opacity = 0}>
@@ -2310,7 +2382,7 @@ const HR = () => {
                     <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '16px' }}>
                       Detailed Punctuality Breakdown ({selectedStaffProfile.attendanceRate} Score)
                     </span>
-                    
+
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', textAlign: 'center' }}>
                       <div style={{ padding: '12px', background: '#ecfdf5', borderRadius: '14px' }}>
                         <span style={{ fontSize: '11px', fontWeight: '800', color: '#10b981', display: 'block', textTransform: 'uppercase' }}>Present</span>
@@ -2366,6 +2438,331 @@ const HR = () => {
                   </div>
                 </>
               )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ========================================================= */}
+      {/* MISSING MODALS IMPLEMENTATION */}
+      {/* ========================================================= */}
+
+      {/* 1. LEAVE MODAL */}
+      <AnimatePresence>
+        {showLeaveModal && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} style={{ background: 'white', borderRadius: '24px', width: '500px', maxWidth: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ padding: '24px', borderBottom: '1px solid var(--border-dark)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'var(--text-main)' }}>Log Leave Request</h3>
+                <button onClick={() => setShowLeaveModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} color="var(--text-muted)" /></button>
+              </div>
+              <form onSubmit={handleLogLeave} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '8px' }}>Select Employee</label>
+                  <select name="employee" required style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc' }}>
+                    {staffList.map(emp => <option key={emp.id} value={emp.name}>{emp.name} ({emp.dept})</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '8px' }}>Leave Type</label>
+                  <select name="type" required style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc' }}>
+                    <option value="Annual Vacation">Annual Vacation</option>
+                    <option value="Medical Leave">Medical Leave</option>
+                    <option value="Personal Leave">Personal Leave</option>
+                    <option value="Maternity Leave">Maternity/Paternity Leave</option>
+                  </select>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '8px' }}>Start Date</label>
+                    <input type="date" name="startDate" required style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc', boxSizing: 'border-box' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '8px' }}>End Date</label>
+                    <input type="date" name="endDate" required style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc', boxSizing: 'border-box' }} />
+                  </div>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '8px' }}>Total Days</label>
+                  <input type="number" name="duration" required placeholder="e.g. 5" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc', boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '8px' }}>Reason / Notes</label>
+                  <textarea name="reason" required placeholder="Brief explanation..." style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc', minHeight: '80px', boxSizing: 'border-box', resize: 'vertical' }}></textarea>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
+                  <button type="button" onClick={() => setShowLeaveModal(false)} style={{ padding: '12px 24px', borderRadius: '12px', border: '1px solid #cbd5e1', background: 'white', fontWeight: '700', cursor: 'pointer' }}>Cancel</button>
+                  <button type="submit" style={{ padding: '12px 24px', borderRadius: '12px', border: 'none', background: 'var(--primary)', color: 'white', fontWeight: '800', cursor: 'pointer' }}>Submit Request</button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 2. PAYROLL MODAL */}
+      <AnimatePresence>
+        {showPayrollModal && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} style={{ background: 'white', borderRadius: '24px', width: '500px', maxWidth: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ padding: '24px', borderBottom: '1px solid var(--border-dark)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'var(--text-main)' }}>Run Monthly Payroll</h3>
+                <button onClick={() => setShowPayrollModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} color="var(--text-muted)" /></button>
+              </div>
+              <form onSubmit={handleRunPayrollSubmit} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div style={{ background: '#f1f5f9', padding: '16px', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
+                  <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#475569', fontWeight: '600' }}>The system has calculated the following provisional totals for the active workforce:</p>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '14px', fontWeight: '700' }}>Active Headcount:</span>
+                    <span style={{ fontSize: '14px', fontWeight: '800' }}>{staffList.filter(emp => emp.dept !== 'Executive Management' && emp.role !== 'Portfolio Director').length}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '14px', fontWeight: '700' }}>Total Gross Salary:</span>
+                    <span style={{ fontSize: '14px', fontWeight: '800' }}>₵ {calculatedTotalGross.toLocaleString()}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', color: '#ef4444' }}>
+                    <span style={{ fontSize: '14px', fontWeight: '700' }}>Loan Deductions:</span>
+                    <span style={{ fontSize: '14px', fontWeight: '800' }}>- ₵ {activeLoanDeductionsTotal.toLocaleString()}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #cbd5e1', color: 'var(--primary)' }}>
+                    <span style={{ fontSize: '16px', fontWeight: '900' }}>Net ACH Payout:</span>
+                    <span style={{ fontSize: '16px', fontWeight: '900' }}>₵ {calculatedNetDisbursement.toLocaleString()}</span>
+                  </div>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '8px' }}>Select Target Month</label>
+                  <select name="monthYear" required style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc', fontWeight: '700' }}>
+                    <option value="May 2026">May 2026</option>
+                    <option value="June 2026">June 2026</option>
+                    <option value="July 2026">July 2026</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
+                  <button type="button" onClick={() => setShowPayrollModal(false)} style={{ padding: '12px 24px', borderRadius: '12px', border: '1px solid #cbd5e1', background: 'white', fontWeight: '700', cursor: 'pointer' }}>Cancel</button>
+                  <button type="submit" style={{ padding: '12px 24px', borderRadius: '12px', border: 'none', background: 'var(--primary)', color: 'white', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}><Play size={16} fill="white" /> Generate Payroll Batch</button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 3. LOAN MODAL */}
+      <AnimatePresence>
+        {showLoanModal && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} style={{ background: 'white', borderRadius: '24px', width: '500px', maxWidth: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ padding: '24px', borderBottom: '1px solid var(--border-dark)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'var(--text-main)' }}>Request Staff Loan</h3>
+                <button onClick={() => setShowLoanModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} color="var(--text-muted)" /></button>
+              </div>
+              <form onSubmit={handleRequestLoan} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '8px' }}>Select Employee</label>
+                  <select name="employee" required style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc' }}>
+                    {staffList.map(emp => <option key={emp.id} value={emp.name}>{emp.name} ({emp.dept})</option>)}
+                  </select>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '8px' }}>Principal Amount (₵)</label>
+                    <input type="number" name="principal" required placeholder="e.g. 10000" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc', boxSizing: 'border-box' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '8px' }}>Term (Months)</label>
+                    <select name="term" required style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc' }}>
+                      <option value="6">6 Months</option>
+                      <option value="12">12 Months</option>
+                      <option value="18">18 Months</option>
+                      <option value="24">24 Months</option>
+                    </select>
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '8px' }}>Interest Rate (%)</label>
+                    <input type="number" step="0.1" name="interestRate" defaultValue="5.0" required style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc', boxSizing: 'border-box' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '8px' }}>Guarantor Name</label>
+                    <input type="text" name="guarantor" required placeholder="Manager/Director" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc', boxSizing: 'border-box' }} />
+                  </div>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '8px' }}>Loan Purpose</label>
+                  <input type="text" name="purpose" required placeholder="e.g. Medical emergency, Land purchase..." style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc', boxSizing: 'border-box' }} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
+                  <button type="button" onClick={() => setShowLoanModal(false)} style={{ padding: '12px 24px', borderRadius: '12px', border: '1px solid #cbd5e1', background: 'white', fontWeight: '700', cursor: 'pointer' }}>Cancel</button>
+                  <button type="submit" style={{ padding: '12px 24px', borderRadius: '12px', border: 'none', background: 'var(--primary)', color: 'white', fontWeight: '800', cursor: 'pointer' }}>Submit Request</button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 4. SANCTION MODAL */}
+      <AnimatePresence>
+        {showSanctionModal && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} style={{ background: 'white', borderRadius: '24px', width: '500px', maxWidth: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', border: '2px solid #fecaca' }}>
+              <div style={{ padding: '24px', borderBottom: '1px solid var(--border-dark)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fef2f2' }}>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '900', color: '#dc2626' }}>Record Disciplinary Sanction</h3>
+                <button onClick={() => setShowSanctionModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} color="#dc2626" /></button>
+              </div>
+              <form onSubmit={handleLogSanction} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '8px' }}>Select Employee</label>
+                  <select name="employee" required style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc' }}>
+                    {staffList.map(emp => <option key={emp.id} value={emp.name}>{emp.name} ({emp.dept})</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '8px' }}>Infraction Details</label>
+                  <input type="text" name="infraction" required placeholder="e.g. Unexcused absence, Policy violation..." style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc', boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '8px' }}>Severity / Penalty</label>
+                  <select name="severity" required style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc' }}>
+                    <option value="Verbal Warning">Verbal Warning</option>
+                    <option value="Written Warning">Written Warning</option>
+                    <option value="Written Warning & Pay Dock">Written Warning & Pay Dock</option>
+                    <option value="Unpaid Suspension (3 Days)">Unpaid Suspension (3 Days)</option>
+                    <option value="Final Warning">Final Warning</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '8px' }}>Audit Notes</label>
+                  <textarea name="notes" required placeholder="Detailed incident description..." style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc', minHeight: '80px', boxSizing: 'border-box', resize: 'vertical' }}></textarea>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
+                  <button type="button" onClick={() => setShowSanctionModal(false)} style={{ padding: '12px 24px', borderRadius: '12px', border: '1px solid #cbd5e1', background: 'white', fontWeight: '700', cursor: 'pointer' }}>Cancel</button>
+                  <button type="submit" style={{ padding: '12px 24px', borderRadius: '12px', border: 'none', background: '#dc2626', color: 'white', fontWeight: '800', cursor: 'pointer' }}>Log Sanction</button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 5. APPRAISAL MODAL */}
+      <AnimatePresence>
+        {showAppraisalModal && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} style={{ background: 'white', borderRadius: '24px', width: '500px', maxWidth: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ padding: '24px', borderBottom: '1px solid var(--border-dark)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fffbeb' }}>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '900', color: '#d97706' }}>Employee Performance Appraisal</h3>
+                <button onClick={() => setShowAppraisalModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} color="#d97706" /></button>
+              </div>
+              <form onSubmit={handleLogAppraisal} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '8px' }}>Select Employee</label>
+                    <select name="employee" required style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc' }}>
+                      {staffList.map(emp => <option key={emp.id} value={emp.name}>{emp.name} ({emp.dept})</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '8px' }}>KPI Rating (/5)</label>
+                    <input type="number" step="0.1" name="rating" min="0" max="5" defaultValue="4.5" required style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc', boxSizing: 'border-box' }} />
+                  </div>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '8px' }}>Key Accomplishments</label>
+                  <textarea name="keyAchievements" required placeholder="What did they achieve this quarter?" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc', minHeight: '70px', boxSizing: 'border-box', resize: 'vertical' }}></textarea>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '8px' }}>HR / Management Recommendation</label>
+                  <input type="text" name="recommendation" required placeholder="e.g. Promotion, Salary Bump, PIP..." style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc', boxSizing: 'border-box' }} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
+                  <button type="button" onClick={() => setShowAppraisalModal(false)} style={{ padding: '12px 24px', borderRadius: '12px', border: '1px solid #cbd5e1', background: 'white', fontWeight: '700', cursor: 'pointer' }}>Cancel</button>
+                  <button type="submit" style={{ padding: '12px 24px', borderRadius: '12px', border: 'none', background: '#d97706', color: 'white', fontWeight: '800', cursor: 'pointer' }}>Save Appraisal</button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 6. TAKE ATTENDANCE MODAL */}
+      <AnimatePresence>
+        {showTakeAttendanceModal && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} style={{ background: 'white', borderRadius: '24px', width: '900px', maxWidth: '100%', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ padding: '24px', borderBottom: '1px solid var(--border-dark)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'var(--text-main)' }}>Take Daily Attendance</h3>
+                  <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>Manually verify staff presence and punctuality for today.</p>
+                </div>
+                <button onClick={() => setShowTakeAttendanceModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} color="var(--text-muted)" /></button>
+              </div>
+              <form onSubmit={handleSubmitDailyAttendanceRoster} style={{ padding: '0', display: 'flex', flexDirection: 'column', overflow: 'hidden', flex: 1 }}>
+
+                <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-dark)', display: 'flex', gap: '16px', alignItems: 'center', background: 'white' }}>
+                  <label style={{ fontSize: '14px', fontWeight: '800' }}>Select Date:</label>
+                  <input type="date" value={dailyCheckDate} onChange={(e) => setDailyCheckDate(e.target.value)} required style={{ padding: '10px 16px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc' }} />
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Changing the date will NOT recalculate approved leaves. Close and reopen the modal to recalculate.</span>
+                </div>
+
+                <div style={{ overflowY: 'auto', padding: '0', flex: 1, background: '#f8fafc' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                    <thead style={{ position: 'sticky', top: 0, background: '#f1f5f9', zIndex: 10 }}>
+                      <tr>
+                        <th style={{ padding: '12px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Employee</th>
+                        <th style={{ padding: '12px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Status</th>
+                        <th style={{ padding: '12px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Clock-In</th>
+                        <th style={{ padding: '12px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dailyCheckRoster.map((item, idx) => (
+                        <tr key={idx} style={{ borderBottom: '1px solid var(--border-dark)', background: 'white' }}>
+                          <td style={{ padding: '12px 24px' }}>
+                            <span style={{ fontSize: '14px', fontWeight: '800', display: 'block' }}>{item.name}</span>
+                            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{item.dept}</span>
+                          </td>
+                          <td style={{ padding: '12px 24px' }}>
+                            <select
+                              value={item.status}
+                              onChange={(e) => handleUpdateRosterRow(idx, 'status', e.target.value)}
+                              style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', fontWeight: '700' }}
+                            >
+                              <option value="🟢 Present (On Time)">🟢 Present (On Time)</option>
+                              <option value="🟡 Present (Late)">🟡 Present (Late)</option>
+                              <option value="🔴 Unexcused Absent">🔴 Unexcused Absent</option>
+                              <option value="🏖️ Approved Leave">🏖️ Approved Leave</option>
+                            </select>
+                          </td>
+                          <td style={{ padding: '12px 24px' }}>
+                            <input
+                              type="text"
+                              value={item.clockIn}
+                              onChange={(e) => handleUpdateRosterRow(idx, 'clockIn', e.target.value)}
+                              disabled={item.status.includes('Absent') || item.status.includes('Leave')}
+                              style={{ width: '100px', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                            />
+                          </td>
+                          <td style={{ padding: '12px 24px' }}>
+                            <input
+                              type="text"
+                              value={item.notes}
+                              onChange={(e) => handleUpdateRosterRow(idx, 'notes', e.target.value)}
+                              style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div style={{ padding: '24px', borderTop: '1px solid var(--border-dark)', display: 'flex', justifyContent: 'flex-end', gap: '12px', background: 'white' }}>
+                  <button type="button" onClick={() => setShowTakeAttendanceModal(false)} style={{ padding: '12px 24px', borderRadius: '12px', border: '1px solid #cbd5e1', background: 'white', fontWeight: '700', cursor: 'pointer' }}>Cancel</button>
+                  <button type="submit" style={{ padding: '12px 24px', borderRadius: '12px', border: 'none', background: 'var(--primary)', color: 'white', fontWeight: '800', cursor: 'pointer' }}>Save Attendance Roster</button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}

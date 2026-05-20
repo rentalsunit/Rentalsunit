@@ -7,7 +7,7 @@ import {
   HelpCircle, ShieldAlert, ArrowLeft, Copy, Check
 } from 'lucide-react';
 
-import { getStoredUsers, saveStoredUsers } from '../lib/masterData';
+import { getStoredUsers, saveStoredUsers, getStoredStaffEmployees } from '../lib/masterData';
 
 const Login = ({ onLogin }) => {
   const [username, setUsername] = useState('');
@@ -286,6 +286,11 @@ const Login = ({ onLogin }) => {
             let parsed = null;
             try { parsed = currentProfile ? JSON.parse(currentProfile) : null; } catch(e) {}
             
+            // Sync with HR passport photo
+            const hrStaffList = getStoredStaffEmployees();
+            const hrProfile = hrStaffList.find(emp => emp.name?.toLowerCase() === (finalUserMatch?.name?.toLowerCase() || 'master administrator') || (finalUserMatch?.id && emp.id === finalUserMatch?.id));
+            const hrAvatar = hrProfile?.passportPhoto;
+
             const fullProfile = {
               name: finalUserMatch?.name || 'Master Administrator',
               role: finalUserMatch?.role || selectedRole || 'Executive Administrator',
@@ -293,7 +298,7 @@ const Login = ({ onLogin }) => {
               email: finalUserMatch?.email || `${cleanInputUser}@realtyos.gh`,
               phone: finalUserMatch?.phone || parsed?.phone || '+233 54 102 9384',
               department: finalUserMatch?.department || finalUserMatch?.dept || parsed?.department || 'Executive Administration',
-              avatar: finalUserMatch?.avatar || parsed?.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80'
+              avatar: hrAvatar || finalUserMatch?.avatar || parsed?.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80'
             };
             localStorage.setItem('realtyos_user_profile', JSON.stringify(fullProfile));
             window.dispatchEvent(new CustomEvent('realtyos_profile_updated'));
@@ -365,6 +370,11 @@ const Login = ({ onLogin }) => {
         setIsLoading(false);
         localStorage.setItem('realtyos_authenticated', 'true');
         
+        // Sync with HR passport photo
+        const hrStaffList = getStoredStaffEmployees();
+        const hrProfile = hrStaffList.find(emp => emp.name?.toLowerCase() === firstLoginUser.name?.toLowerCase() || (firstLoginUser.id && emp.id === firstLoginUser.id));
+        const hrAvatar = hrProfile?.passportPhoto;
+
         const fullProfile = {
           name: firstLoginUser.name || 'Enterprise User',
           role: firstLoginUser.role || 'Executive Administrator',
@@ -372,7 +382,7 @@ const Login = ({ onLogin }) => {
           email: firstLoginUser.email || `${firstLoginUser.username}@realtyos.gh`,
           phone: firstLoginUser.phone || '+233 54 102 9384',
           department: firstLoginUser.department || firstLoginUser.dept || 'Executive Administration',
-          avatar: firstLoginUser.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80'
+          avatar: hrAvatar || firstLoginUser.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80'
         };
         localStorage.setItem('realtyos_user_profile', JSON.stringify(fullProfile));
         window.dispatchEvent(new CustomEvent('realtyos_profile_updated'));

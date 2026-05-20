@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   CreditCard, Wallet, DollarSign, TrendingUp, TrendingDown, Clock, 
@@ -8,170 +8,30 @@ import {
   Zap, Wrench, ShieldAlert
 } from 'lucide-react';
 import { generateRealPDF } from '../lib/pdfService';
+import { getStoredFinancialVouchers, saveStoredFinancialVouchers } from '../lib/masterData';
 
 const Finance = () => {
-  const [transactions, setTransactions] = useState([
-    { 
-      id: 'TRX-5001', 
-      type: 'Income', 
-      source: 'Rent', 
-      property: 'Sunset Luxury Apartments',
-      category: 'Rent - Unit 302 (6 Months Advance)', 
-      amount: 12500, 
-      formattedAmount: '₵ 12,500', 
-      date: '15 May 2026', 
-      status: 'Approved', 
-      officer: 'Sarah Osei',
-      payerRecipient: 'Tenant: Kwame Mensah', 
-      paymentMethod: 'Bank Transfer',
-      refNo: 'GTB-902184920',
-      notes: 'Unit: #302 | Coverage: May 2026 - Nov 2026 | Full advance rent received.'
-    },
-    { 
-      id: 'TRX-5002', 
-      type: 'Income', 
-      source: 'Sales', 
-      property: 'Green Valley Estate',
-      category: 'Plot 12 Acquisition (Initial Deposit)', 
-      amount: 150000, 
-      formattedAmount: '₵ 150,000', 
-      date: '14 May 2026', 
-      status: 'Approved', 
-      officer: 'Louis Kemenyo',
-      payerRecipient: 'Buyer: Dr. Evelyn Addo', 
-      paymentMethod: 'Cheque',
-      refNo: 'SCB-8839201',
-      notes: 'Asset: Plot 12 | Initial 30% deposit secured. Sale agreement endorsed.'
-    },
-    { 
-      id: 'TRX-5003', 
-      type: 'Expense', 
-      source: 'Maintenance', 
-      property: 'The Apex Commercial Tower',
-      category: 'HVAC Central Air Servicing', 
-      amount: 8500, 
-      formattedAmount: '₵ 8,500', 
-      date: '12 May 2026', 
-      status: 'Pending', 
-      officer: 'Michael K.',
-      payerRecipient: 'Vendor: CoolTech Engineers Ltd', 
-      paymentMethod: 'Mobile Money (MoMo)',
-      refNo: 'MOM-774829',
-      notes: 'Service Ref: CT-8829 | Preventative quarterly servicing of 14 AC compressor units.'
-    },
-    { 
-      id: 'TRX-5004', 
-      type: 'Expense', 
-      source: 'Payroll', 
-      property: 'Corporate HQ',
-      category: 'Executive & Admin Staff Payroll', 
-      amount: 45000, 
-      formattedAmount: '₵ 45,000', 
-      date: '10 May 2026', 
-      status: 'Pending', 
-      officer: 'Finance Director',
-      payerRecipient: 'Beneficiaries: 18 Active Empl.', 
-      paymentMethod: 'Bank Transfer',
-      refNo: 'ACH-BATCH-0526',
-      notes: 'Period: May 2026 | Standard monthly salary disbursements.'
-    },
-    { 
-      id: 'TRX-5005', 
-      type: 'Income', 
-      source: 'Rent', 
-      property: 'The Apex Commercial Tower',
-      category: 'Ground Floor Retail Store Q2 Rent', 
-      amount: 85000, 
-      formattedAmount: '₵ 85,000', 
-      date: '08 May 2026', 
-      status: 'Approved', 
-      officer: 'Sarah Osei',
-      payerRecipient: 'Tenant: Melcom Superstores', 
-      paymentMethod: 'Bank Transfer',
-      refNo: 'ECO-1102930',
-      notes: 'Unit: Retail Anchor G1 | Coverage: Q2 2026 | Direct wire confirmed.'
-    },
-    { 
-      id: 'TRX-5006', 
-      type: 'Expense', 
-      source: 'Utilities', 
-      property: 'Sunset Luxury Apartments',
-      category: 'ECG Electricity Common Area Power', 
-      amount: 14200, 
-      formattedAmount: '₵ 14,200', 
-      date: '05 May 2026', 
-      status: 'Approved', 
-      officer: 'Michael K.',
-      payerRecipient: 'Provider: ECG / Ghana Water Co.', 
-      paymentMethod: 'Online Portal / Card',
-      refNo: 'ECG-MTR-4029',
-      notes: 'Meter #ECG-9920193 | May bulk billing for perimeter lighting and water pumps.'
-    },
-    { 
-      id: 'TRX-5007', 
-      type: 'Income', 
-      source: 'Sales', 
-      property: 'Palm Breeze Residences',
-      category: 'Villa 4 Full Settlement', 
-      amount: 850000, 
-      formattedAmount: '₵ 850,000', 
-      date: '02 May 2026', 
-      status: 'Approved', 
-      officer: 'Louis Kemenyo',
-      payerRecipient: 'Buyer: Nana Osei Tutu', 
-      paymentMethod: 'Escrow Disbursement',
-      refNo: 'ESC-RE-99201',
-      notes: 'Asset: Luxury Villa 4 | Escrow balance released upon title registration.'
-    },
-    { 
-      id: 'TRX-5008', 
-      type: 'Expense', 
-      source: 'Maintenance', 
-      property: 'Green Valley Estate',
-      category: 'Perimeter Wall Repair Work', 
-      amount: 32000, 
-      formattedAmount: '₵ 32,000', 
-      date: '28 Apr 2026', 
-      status: 'Rejected', 
-      officer: 'Louis Kemenyo',
-      payerRecipient: 'Vendor: Fortress Construction Ltd', 
-      paymentMethod: 'Cheque',
-      refNo: 'CHQ-88201',
-      notes: 'Rejected: Contractor failed quality audit inspection. Voucher voided.'
-    },
-    { 
-      id: 'TRX-5009', 
-      type: 'Expense', 
-      source: 'Payroll', 
-      property: 'Sales Division',
-      category: 'Q1 Agent Commission Payouts', 
-      amount: 28500, 
-      formattedAmount: '₵ 28,500', 
-      date: '25 Apr 2026', 
-      status: 'Approved', 
-      officer: 'Finance Director',
-      payerRecipient: 'Beneficiaries: Top 3 Sales Agents', 
-      paymentMethod: 'Bank Transfer',
-      refNo: 'COM-DISB-0426',
-      notes: 'Incentive payout based on realized Q1 property sales volume thresholds.'
-    },
-    { 
-      id: 'TRX-5010', 
-      type: 'Income', 
-      source: 'Rent', 
-      property: 'Sunset Luxury Apartments',
-      category: 'Penthouse B Security Deposit & Premium', 
-      amount: 35000, 
-      formattedAmount: '₵ 35,000', 
-      date: '20 Apr 2026', 
-      status: 'Approved', 
-      officer: 'Sarah Osei',
-      payerRecipient: 'Tenant: Victoria Kemenyo', 
-      paymentMethod: 'Bank Transfer',
-      refNo: 'BW-9920184',
-      notes: 'Unit: Penthouse B | Security deposit + 1st month rent.'
-    }
-  ]);
+  const [transactions, setTransactions] = useState(() => {
+    return getStoredFinancialVouchers();
+  });
+
+  // Sync state when coming back from other modules or periodically
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setTransactions(getStoredFinancialVouchers());
+    };
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('realtyos_finance_update', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('realtyos_finance_update', handleStorageChange);
+    };
+  }, []);
+
+  const saveTransactions = (updated) => {
+    setTransactions(updated);
+    saveStoredFinancialVouchers(updated);
+  };
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -194,13 +54,15 @@ const Finance = () => {
   const [paymentMethod, setPaymentMethod] = useState('Bank Transfer');
 
   const handleApprove = (id) => {
-    setTransactions(transactions.map(t => t.id === id ? { ...t, status: 'Approved' } : t));
+    const updated = transactions.map(t => t.id === id ? { ...t, status: 'Approved' } : t);
+    saveTransactions(updated);
     setSuccessMsg(`Voucher ${id} successfully approved and posted to General Ledger.`);
     setTimeout(() => setSuccessMsg(''), 4000);
   };
 
   const handleReject = (id) => {
-    setTransactions(transactions.map(t => t.id === id ? { ...t, status: 'Rejected' } : t));
+    const updated = transactions.map(t => t.id === id ? { ...t, status: 'Rejected' } : t);
+    saveTransactions(updated);
     setSuccessMsg(`Voucher ${id} has been rejected and flagged.`);
     setTimeout(() => setSuccessMsg(''), 4000);
   };
@@ -289,7 +151,8 @@ const Finance = () => {
       notes: generatedNotes || 'Reconciled voucher entry.'
     };
 
-    setTransactions([newTrx, ...transactions]);
+    const updated = [newTrx, ...transactions];
+    saveTransactions(updated);
     setShowAddModal(false);
     setSuccessMsg(`Successfully recorded ${newType} entry (${formattedAmount}) into financial ledger!`);
     setTimeout(() => setSuccessMsg(''), 4000);

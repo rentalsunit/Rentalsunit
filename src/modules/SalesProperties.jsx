@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import { getThemedAsset } from '../lib/themeImages';
 import { generateRealPDF } from '../lib/pdfService';
+import { getStoredSalesProperties, saveStoredSalesProperties } from '../lib/masterData';
+import { getDynamicIconConfig } from './RentalProperties';
 
 const generateIndividualUnits = (prefix, count, defaultPrice, initialSold) => {
   const units = [];
@@ -53,102 +55,12 @@ const SalesProperties = ({ setActiveTab }) => {
 
   // Properties state with localStorage and individual itemized units
   const [properties, setProperties] = useState(() => {
-    const saved = localStorage.getItem('realtyos_sales_properties');
-    if (saved) {
-      try { return JSON.parse(saved); } catch(e) {}
-    }
-    return [
-      { 
-        id: 1, 
-        name: 'Sunset Hills Luxury Villas', 
-        location: 'East Legon Hills, Accra', 
-        type: 'Housing Project', 
-        priceRange: '₵ 850,000', 
-        numericPrice: 850000,
-        totalUnits: 30,
-        soldUnits: 18,
-        projectedValue: '₵ 25.5M',
-        status: 'Active Sales', 
-        inventory: ['18x 4BR Villas', '12x 5BR Mansions'],
-        individualUnits: generateIndividualUnits('Villa', 30, '₵ 850,000', 18),
-        image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80',
-        brochureSpecs: {
-          architecturalStyle: 'Modern Tropical Contemporary',
-          zoning: 'Residential Elite',
-          title: 'Land Title Certificate (99 Yr Lease)',
-          amenities: ['Private Infinity Pool', 'Solar Inverter Included', '24/7 Manned Security Gate', 'Fitted Italian Kitchen']
-        }
-      },
-      { 
-        id: 2, 
-        name: 'Green Valley Eco Estate', 
-        location: 'Aburi Mountains, Eastern Region', 
-        type: 'Land Development', 
-        priceRange: '₵ 120,000', 
-        numericPrice: 120000,
-        totalUnits: 80,
-        soldUnits: 68,
-        projectedValue: '₵ 9.6M',
-        status: 'Almost Sold Out', 
-        inventory: ['60x Serviced Plots', '20x Commercial Plots', 'Title: Registered Indenture', 'Zoning: Residential'],
-        individualUnits: generateIndividualUnits('Plot', 80, '₵ 120,000', 68),
-        image: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80',
-        brochureSpecs: {
-          architecturalStyle: 'Serviced Mountain Acreage',
-          zoning: 'Eco-Residential / Boutique Commercial',
-          title: 'Registered Indenture & Cadastral Site Plan',
-          amenities: ['Tarred Road Access', 'Underground Drainage', 'High Elevation Panoramas', 'Borehole Water Grid']
-        }
-      },
-      { 
-        id: 3, 
-        name: 'The Apex Commercial Tower', 
-        location: 'Airport City, Accra', 
-        type: 'Commercial Complex', 
-        priceRange: '₵ 2.5M', 
-        numericPrice: 2500000,
-        totalUnits: 45,
-        soldUnits: 12,
-        projectedValue: '₵ 112.5M',
-        status: 'Pre-Launch', 
-        inventory: ['30x Executive Offices', '10x Penthouse Suites', '5x Retail Spaces'],
-        individualUnits: generateIndividualUnits('Suite', 45, '₵ 2.5M', 12),
-        image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80',
-        brochureSpecs: {
-          architecturalStyle: 'Ultra-Modern Glass & Steel Skyscraper',
-          zoning: 'Commercial Grade A',
-          title: 'Master Strata Title',
-          amenities: ['High-Speed Elevators', 'Helipad', 'Dedicated Fiber Optic Lines', 'Subterranean Multi-Level Parking']
-        }
-      },
-      { 
-        id: 4, 
-        name: 'Palm Breeze Beach Residences', 
-        location: 'Prampram Coastal Road', 
-        type: 'Housing Project', 
-        priceRange: '₵ 600,000', 
-        numericPrice: 600000,
-        totalUnits: 24,
-        soldUnits: 8,
-        projectedValue: '₵ 14.4M',
-        status: 'Active Sales', 
-        inventory: ['14x 3BR Townhouses', '10x Beachfront Villas'],
-        individualUnits: generateIndividualUnits('Plot/Unit', 24, '₵ 600,000', 8),
-        image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80',
-        brochureSpecs: {
-          architecturalStyle: 'Coastal Beachfront Resort Living',
-          zoning: 'Residential Resort',
-          title: 'Land Title Certificate',
-          amenities: ['Direct Beach Access', 'Clubhouse & Marina Lounge', 'Paved Walkways', 'Backup Generator']
-        }
-      },
-    ];
+    return getStoredSalesProperties();
   });
 
   const savePropertiesToStorage = (updatedProps) => {
     setProperties(updatedProps);
-    localStorage.setItem('realtyos_sales_properties', JSON.stringify(updatedProps));
-    window.dispatchEvent(new Event('storage'));
+    saveStoredSalesProperties(updatedProps);
   };
 
   const handleDeleteProperty = (propId, propName) => {
@@ -236,13 +148,14 @@ const SalesProperties = ({ setActiveTab }) => {
   // Sync state when coming back from sales or periodically
   useEffect(() => {
     const handleStorageChange = () => {
-      const saved = localStorage.getItem('realtyos_sales_properties');
-      if (saved) {
-        try { setProperties(JSON.parse(saved)); } catch(e) {}
-      }
+      setProperties(getStoredSalesProperties());
     };
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener('realtyos_sales_props_update', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('realtyos_sales_props_update', handleStorageChange);
+    };
   }, []);
 
   const handleAddProperty = (e) => {
@@ -609,6 +522,8 @@ const SalesProperties = ({ setActiveTab }) => {
           filteredProperties.map((prop) => {
             const statusBadge = getStatusBadge(prop.status);
             const percentSold = prop.totalUnits > 0 ? Math.round((prop.soldUnits / prop.totalUnits) * 100) : 0;
+            const vectorConfig = getDynamicIconConfig(prop.type);
+            const VectorIcon = vectorConfig.Icon;
             
             return (
               <motion.div 
@@ -624,24 +539,29 @@ const SalesProperties = ({ setActiveTab }) => {
                   border: '1px solid rgba(0,0,0,0.06)'
                 }}
               >
-                {/* Image Section */}
                 <div style={{ 
                   width: viewMode === 'grid' ? '100%' : '280px', 
-                  height: viewMode === 'grid' ? '240px' : 'auto', 
+                  height: viewMode === 'grid' ? '240px' : '100%', 
                   position: 'relative',
                   flexShrink: 0,
-                  overflow: 'hidden'
+                  overflow: 'hidden',
+                  background: vectorConfig.bg,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
                 }}>
-                  <img src={prop.image} alt={prop.name} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s ease' }} />
-                  <div style={{ inset: 0, position: 'absolute', background: 'linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.6) 100%)' }} />
+                  <div style={{ position: 'absolute', inset: 0, opacity: 0.1, backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px' }}></div>
                   
-                  {/* Badges on image */}
+                  <motion.div whileHover={{ scale: 1.1, rotate: 5 }} style={{ color: 'white', opacity: 0.9, filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.2))' }}>
+                    <VectorIcon size={84} strokeWidth={1.5} />
+                  </motion.div>
+                  
+                  <div style={{ inset: 0, position: 'absolute', background: 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.8) 100%)' }} />
+                  
                   <div style={{ position: 'absolute', top: '16px', left: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <span style={{ 
                         background: 'rgba(255,255,255,0.95)', padding: '6px 12px', 
                         borderRadius: '30px', fontSize: '11px', fontWeight: '800', 
-                        color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '6px',
+                        color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px',
                         backdropFilter: 'blur(8px)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                       }}>
                         {getTypeIcon(prop.type)}
@@ -649,7 +569,6 @@ const SalesProperties = ({ setActiveTab }) => {
                       </span>
                     </div>
 
-                    {/* Structural Badge */}
                     <span style={{ 
                       background: prop.totalUnits === 1 ? '#e0e7ff' : '#f3e8ff', 
                       color: prop.totalUnits === 1 ? '#4338ca' : '#7e22ce', 
@@ -674,7 +593,6 @@ const SalesProperties = ({ setActiveTab }) => {
                     </span>
                   </div>
 
-                  {/* Starting Price Overlay */}
                   <div style={{ position: 'absolute', bottom: '16px', left: '16px', color: 'white' }}>
                     <span style={{ fontSize: '11px', fontWeight: '700', color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: '2px' }}>
                       {prop.totalUnits === 1 ? 'Standalone Sale Price' : 'Starting At'}
@@ -685,7 +603,6 @@ const SalesProperties = ({ setActiveTab }) => {
                   </div>
                 </div>
 
-                {/* Content Section */}
                 <div style={{ padding: '24px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
@@ -705,7 +622,6 @@ const SalesProperties = ({ setActiveTab }) => {
                       </button>
                     </div>
 
-                    {/* Inventory Pills */}
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '16px', marginBottom: '20px' }}>
                       {prop.inventory.map((item, idx) => (
                         <span key={idx} style={{ fontSize: '12px', fontWeight: '700', backgroundColor: '#f1f5f9', color: '#475569', padding: '4px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
@@ -714,7 +630,6 @@ const SalesProperties = ({ setActiveTab }) => {
                       ))}
                     </div>
 
-                    {/* Sales Progress & Metrics */}
                     <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '16px', marginBottom: '20px', border: '1px solid #f1f5f9' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                         <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -744,7 +659,6 @@ const SalesProperties = ({ setActiveTab }) => {
                     </div>
                   </div>
 
-                  {/* Footer Actions */}
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                     <button 
                       onClick={() => setActiveBrochureProperty(prop)}
@@ -966,14 +880,27 @@ const SalesProperties = ({ setActiveTab }) => {
                 </div>
               </div>
 
-              {/* High Res Banner Image */}
-              <div style={{ width: '100%', height: '320px', borderRadius: '24px', overflow: 'hidden', marginBottom: '32px', position: 'relative' }}>
-                <img src={activeBrochureProperty.image} alt={activeBrochureProperty.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <div style={{ position: 'absolute', bottom: '20px', left: '20px', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)', padding: '12px 24px', borderRadius: '20px', color: 'white' }}>
-                  <span style={{ fontSize: '12px', fontWeight: '800', color: '#bbf7d0', textTransform: 'uppercase', display: 'block' }}>Prime Development Location</span>
-                  <span style={{ fontSize: '18px', fontWeight: '900' }}>{activeBrochureProperty.location}</span>
-                </div>
-              </div>
+              {/* Dynamic High-Res Vector Brochure Banner */}
+              {(() => {
+                const vectorConfig = getDynamicIconConfig(activeBrochureProperty.type);
+                const VectorIcon = vectorConfig.Icon;
+                return (
+                  <div style={{ 
+                    width: '100%', height: '320px', borderRadius: '24px', overflow: 'hidden', marginBottom: '32px', position: 'relative',
+                    background: vectorConfig.bg, display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    <div style={{ position: 'absolute', inset: 0, opacity: 0.15, backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '32px 32px' }}></div>
+                    <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={{ color: 'white', filter: 'drop-shadow(0 20px 30px rgba(0,0,0,0.3))' }}>
+                      <VectorIcon size={140} strokeWidth={1} />
+                    </motion.div>
+                    <div style={{ inset: 0, position: 'absolute', background: 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.7) 100%)' }} />
+                    <div style={{ position: 'absolute', bottom: '20px', left: '20px', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)', padding: '12px 24px', borderRadius: '20px', color: 'white' }}>
+                      <span style={{ fontSize: '12px', fontWeight: '800', color: '#bbf7d0', textTransform: 'uppercase', display: 'block' }}>Prime Development Location</span>
+                      <span style={{ fontSize: '20px', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '8px' }}><MapPin size={18} style={{ color: '#10b981' }} /> {activeBrochureProperty.location}</span>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Specs & Matrix */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }}>
@@ -1173,13 +1100,7 @@ const SalesProperties = ({ setActiveTab }) => {
                 </button>
               </div>
 
-              {/* STORAGE OPTIMIZATION NOTICE */}
-              <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', padding: '16px 20px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '14px', fontSize: '13px', color: '#1e3a8a', fontWeight: '800', marginBottom: '28px' }}>
-                <Server size={24} style={{ flexShrink: 0, color: '#2563eb' }} />
-                <span>
-                  💡 <strong>Supabase Quota & Space Optimization Active:</strong> Custom image URL and file uploads are disabled to preserve cloud storage quota. The system automatically detects asset classification (Shop, Store, Apartment, Villa, Land, Commercial Suite) and attaches professional high-resolution themed architectural artwork.
-                </span>
-              </div>
+
 
               <form onSubmit={handleAddProperty} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div>

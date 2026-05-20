@@ -15,6 +15,154 @@ export const getLocalData = (key, fallback) => {
 };
 
 /**
+ * Maps frontend models to backend database rows
+ */
+export const mapToDb = (tableName, item) => {
+  if (tableName === 'sales_properties') {
+    return {
+      id: String(item.id),
+      title: item.name || '',
+      price: Number(item.numericPrice) || 0,
+      location: item.location || '',
+      type: item.type || '',
+      status: item.status || '',
+      image: item.image || '',
+      units: item.individualUnits || [],
+      amenities: {
+        priceRange: item.priceRange,
+        totalUnits: item.totalUnits,
+        soldUnits: item.soldUnits,
+        projectedValue: item.projectedValue,
+        inventory: item.inventory,
+        brochureSpecs: item.brochureSpecs,
+        icon: item.icon
+      }
+    };
+  }
+
+  if (tableName === 'sales_deals') {
+    const { id, property, client, numericPrice, date, stage, agent, type, notes, ...extra } = item;
+    return {
+      id: String(id),
+      property: property || '',
+      buyer: client || '',
+      amount: Number(numericPrice) || 0,
+      date: date || '',
+      status: stage || '',
+      agent: agent || '',
+      type: type || '',
+      notes: JSON.stringify({
+        notes: notes || '',
+        ...extra
+      })
+    };
+  }
+
+  if (tableName === 'maintenance_tickets') {
+    const { id, title, unit, property, category, priority, status, date, assignedTo, estCost, notes, ...extra } = item;
+    return {
+      id: String(id),
+      title: title || '',
+      unit: unit || '',
+      property: property || '',
+      category: category || '',
+      priority: priority || '',
+      status: status || '',
+      date: date || '',
+      assignedTo: assignedTo || '',
+      cost: Number(estCost) || 0,
+      description: notes || '',
+      tenant: JSON.stringify(extra)
+    };
+  }
+
+  // Fallback / standard tables (ensure id is String)
+  return {
+    ...item,
+    id: item.id ? String(item.id) : `ID-${Math.floor(Math.random() * 900000)}`
+  };
+};
+
+/**
+ * Maps backend database rows back to frontend models
+ */
+export const mapFromDb = (tableName, dbItem) => {
+  if (tableName === 'sales_properties') {
+    const metadata = dbItem.amenities || {};
+    return {
+      id: isNaN(dbItem.id) ? dbItem.id : Number(dbItem.id),
+      name: dbItem.title,
+      numericPrice: Number(dbItem.price),
+      location: dbItem.location,
+      type: dbItem.type,
+      status: dbItem.status,
+      image: dbItem.image,
+      individualUnits: dbItem.units || [],
+      priceRange: metadata.priceRange || `₵ ${Number(dbItem.price).toLocaleString()}`,
+      totalUnits: metadata.totalUnits || (dbItem.units ? dbItem.units.length : 0),
+      soldUnits: metadata.soldUnits || 0,
+      projectedValue: metadata.projectedValue || `₵ ${Number(dbItem.price).toLocaleString()}`,
+      inventory: metadata.inventory || [],
+      brochureSpecs: metadata.brochureSpecs || {},
+      icon: metadata.icon || '🏢'
+    };
+  }
+
+  if (tableName === 'sales_deals') {
+    let notes = dbItem.notes || '';
+    let extra = {};
+    if (typeof notes === 'string' && notes.startsWith('{') && notes.endsWith('}')) {
+      try {
+        const parsed = JSON.parse(notes);
+        notes = parsed.notes || '';
+        extra = parsed;
+        delete extra.notes;
+      } catch (e) {}
+    }
+    return {
+      id: dbItem.id,
+      property: dbItem.property,
+      client: dbItem.buyer,
+      numericPrice: Number(dbItem.amount),
+      price: `₵ ${Number(dbItem.amount).toLocaleString()}`,
+      date: dbItem.date,
+      stage: dbItem.status,
+      agent: dbItem.agent,
+      type: dbItem.type,
+      notes: notes,
+      ...extra
+    };
+  }
+
+  if (tableName === 'maintenance_tickets') {
+    let extra = {};
+    if (typeof dbItem.tenant === 'string' && dbItem.tenant.startsWith('{') && dbItem.tenant.endsWith('}')) {
+      try {
+        extra = JSON.parse(dbItem.tenant);
+      } catch (e) {}
+    }
+    return {
+      id: dbItem.id,
+      title: dbItem.title,
+      unit: dbItem.unit,
+      property: dbItem.property,
+      category: dbItem.category,
+      priority: dbItem.priority,
+      status: dbItem.status,
+      date: dbItem.date,
+      assignedTo: dbItem.assignedTo,
+      estCost: Number(dbItem.cost),
+      formattedCost: extra.formattedCost || `₵ ${Number(dbItem.cost).toLocaleString()}`,
+      notes: dbItem.description,
+      loggedBy: extra.loggedBy || 'System',
+      ...extra
+    };
+  }
+
+  return dbItem;
+};
+
+/**
  * Synchronize a specific Supabase table with localStorage cache
  */
 export const syncTableWithStorage = async (tableName, storageKey, defaultData, dispatchEventName) => {
@@ -35,11 +183,8 @@ export const syncTableWithStorage = async (tableName, storageKey, defaultData, d
       console.log(`[Supabase Sync] Table '${tableName}' is currently empty in cloud. Auto-seeding...`);
       const local = getLocalData(storageKey, defaultData);
       if (local && local.length > 0) {
-        // Sanitize objects to ensure id is string or correct type before upsert
-        const sanitized = local.map(item => ({
-          ...item,
-          id: item.id ? String(item.id) : `ID-${Math.floor(Math.random() * 900000)}`
-        }));
+        // Sanitize and map objects to DB format before upsert
+        const sanitized = local.map(item => mapToDb(tableName, item));
         
         const { error: seedError } = await supabase.from(tableName).upsert(sanitized, { onConflict: 'id' });
         if (seedError) {
@@ -51,12 +196,13 @@ export const syncTableWithStorage = async (tableName, storageKey, defaultData, d
       return local;
     }
 
-    // Cloud has data! Cache it locally
-    localStorage.setItem(storageKey, JSON.stringify(data));
+    // Cloud has data! Map it back to frontend schema and cache it locally
+    const mapped = data.map(item => mapFromDb(tableName, item));
+    localStorage.setItem(storageKey, JSON.stringify(mapped));
     if (dispatchEventName) {
       window.dispatchEvent(new Event(dispatchEventName));
     }
-    return data;
+    return mapped;
 
   } catch (err) {
     console.warn(`[Supabase Sync] Exception syncing '${tableName}':`, err);
@@ -76,15 +222,37 @@ export const saveToSupabaseAndStorage = async (tableName, storageKey, items, dis
 
   // 2. Background async sync with Supabase
   try {
-    const sanitized = items.map(item => ({
-      ...item,
-      id: item.id ? String(item.id) : `ID-${Math.floor(Math.random() * 900000)}`
-    }));
+    const sanitized = items.map(item => mapToDb(tableName, item));
 
     // Perform upsert of all current items
     const { error } = await supabase.from(tableName).upsert(sanitized, { onConflict: 'id' });
     if (error) {
       console.warn(`[Supabase Sync] Background backup to '${tableName}' failed:`, error.message);
+
+      // Dynamic Fallback Save for Large Payloads
+      const isPayloadTooLarge = error.message.includes('413') || 
+                                error.message.toLowerCase().includes('payload too large') || 
+                                error.message.toLowerCase().includes('too large');
+                                
+      if (isPayloadTooLarge && tableName === 'staff_employees') {
+        console.log(`[Supabase Sync] Payload too large. Retrying with heavy image URLs stripped...`);
+        const safetyItems = sanitized.map(item => ({
+          ...item,
+          passportPhoto: item.passportPhoto?.startsWith('data:') ? null : item.passportPhoto,
+          ghanaCardFront: item.ghanaCardFront?.startsWith('data:') ? null : item.ghanaCardFront,
+          ghanaCardBack: item.ghanaCardBack?.startsWith('data:') ? null : item.ghanaCardBack
+        }));
+        
+        const { error: retryError } = await supabase.from(tableName).upsert(safetyItems, { onConflict: 'id' });
+        if (retryError) {
+          console.error(`[Supabase Sync] Safety retry failed:`, retryError.message);
+          return; // Abort deletion on complete write failures
+        } else {
+          console.log(`[Supabase Sync] Safety retry succeeded! Core textual records preserved.`);
+        }
+      } else {
+        return; // Abort deletion on standard database errors
+      }
     } else {
       console.log(`[Supabase Sync] Successfully synchronized ${sanitized.length} records to '${tableName}'.`);
     }
@@ -129,6 +297,9 @@ export const testSupabaseConnection = async () => {
     'staff_leaves',
     'staff_attendance',
     'staff_loans',
+    'staff_sanctions',
+    'staff_appraisals',
+    'staff_payroll',
     'financial_vouchers',
     'staff_tasks',
     'crm_prospects',

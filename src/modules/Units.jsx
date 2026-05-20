@@ -8,7 +8,7 @@ import {
   UserPlus, Lock, Unlock, Printer, FileText, Edit3, Save, Trash2, UserMinus
 } from 'lucide-react';
 import { getThemedAsset } from '../lib/themeImages';
-import { getStoredUnits, saveStoredUnits, getStoredTenants, saveStoredTenants, getStoredLeases, saveStoredLeases } from '../lib/masterData';
+import { getStoredUnits, saveStoredUnits, getStoredTenants, saveStoredTenants, getStoredLeases, saveStoredLeases, getStoredMaintenanceTickets, saveStoredMaintenanceTickets } from '../lib/masterData';
 import { generateRealPDF } from '../lib/pdfService';
 
 const Units = () => {
@@ -303,17 +303,8 @@ const Units = () => {
     saveStoredUnits(updatedUnits);
     setUnits(updatedUnits);
     
-    // 2. Load existing tickets from localStorage or use default mock structure
-    let existingTickets = [];
-    const saved = localStorage.getItem('realtyos_maintenance_tickets');
-    if (saved) {
-      try { existingTickets = JSON.parse(saved); } catch(err) {}
-    } else {
-      existingTickets = [
-        { id: 'MNT-8001', property: 'Sunset Luxury Apartments', unit: 'Unit 104', category: 'Plumbing', title: 'Main Water Line Burst & Pressure Drop', priority: 'Urgent', status: 'In Progress', loggedBy: 'David Wilson', assignedTo: 'QuickFix Plumbing Engineers', estCost: 3500, formattedCost: '₵ 3,500', date: '16 May 2026', notes: 'Emergency shut-off activated.' },
-        { id: 'MNT-8002', property: 'The Apex Commercial Tower', unit: '12th Floor West Wing', category: 'HVAC', title: 'Central Air Conditioning Compressor Failure', priority: 'High', status: 'Pending Approval', loggedBy: 'Michael K.', assignedTo: 'CoolTech HVAC Ltd', estCost: 18500, formattedCost: '₵ 18,500', date: '15 May 2026', notes: 'Requires replacement of primary coolant coil.' }
-      ];
-    }
+    // 2. Load existing tickets from masterData helper
+    const existingTickets = getStoredMaintenanceTickets();
 
     const newTicketId = `MNT-${8000 + existingTickets.length + 1}`;
     const newWorkOrder = {
@@ -334,8 +325,7 @@ const Units = () => {
 
     // Unshift new ticket to top of list & save
     const updatedTickets = [newWorkOrder, ...existingTickets];
-    localStorage.setItem('realtyos_maintenance_tickets', JSON.stringify(updatedTickets));
-    window.dispatchEvent(new Event('maintenance_tickets_updated'));
+    saveStoredMaintenanceTickets(updatedTickets);
 
     setShowMaintenanceModal(false);
     setSelectedUnitForMaintenance(null);
@@ -914,13 +904,7 @@ const Units = () => {
                 </button>
               </div>
               
-              {/* STORAGE OPTIMIZATION NOTICE */}
-              <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', padding: '16px 20px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '14px', fontSize: '13px', color: '#1e3a8a', fontWeight: '800', marginBottom: '28px' }}>
-                <Server size={24} style={{ flexShrink: 0, color: '#2563eb' }} />
-                <span>
-                  💡 <strong>Supabase Quota & Space Optimization Active:</strong> Custom image and media uploads are disabled to preserve cloud storage limits. The system automatically detects unit classification (Shop, Apartment, Penthouse, Villa, Studio, Office) and assigns premium high-resolution themed architectural icons and badges.
-                </span>
-              </div>
+
               
               <form onSubmit={handleAddUnit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 <div>

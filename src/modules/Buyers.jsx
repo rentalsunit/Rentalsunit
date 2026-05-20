@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, Filter, Plus, UserCheck, Phone, Mail, MapPin, 
   DollarSign, Flame, Zap, Clock, Calendar, 
   CheckCircle2, MoreVertical, X, Send, Eye, ShieldCheck, 
-  Briefcase, LayoutGrid, List, MessageSquare, FileText, MessageCircle
+  Briefcase, LayoutGrid, List, MessageSquare, FileText, MessageCircle,
+  Trash2, Edit3
 } from 'lucide-react';
+import { getStoredCrmProspects, saveStoredCrmProspects } from '../lib/masterData';
 
 const Buyers = () => {
   const [viewMode, setViewMode] = useState('grid');
@@ -16,85 +18,30 @@ const Buyers = () => {
   const [activeOfferProspect, setActiveOfferProspect] = useState(null);
   const [msgChannel, setMsgChannel] = useState('whatsapp'); // 'whatsapp' or 'email'
   const [offerChannel, setOfferChannel] = useState('whatsapp'); // 'whatsapp' or 'email'
+  const [activeEditProspect, setActiveEditProspect] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
 
-  const [prospects, setProspects] = useState([
-    { 
-      id: 'PR-201', 
-      name: 'Michael Osei-Mensah', 
-      email: 'm.oseimensah@corporate.com.gh', 
-      phone: '+233 24 888 9999',
-      avatar: 'https://ui-avatars.com/api/?name=Michael+O&background=00875a&color=fff',
-      category: 'High Net Worth',
-      budget: '₵ 1,500,000 - ₵ 2,500,000',
-      minBudget: 1500000,
-      interest: 'Sunset Hills Luxury Villas',
-      status: 'Hot Lead',
-      source: 'Diaspora Roadshow',
-      lastInteraction: 'Attended VIP Private Viewing on 14 May',
-      assignedAgent: 'Louis Kemenyo'
-    },
-    { 
-      id: 'PR-202', 
-      name: 'Evelyn Addo-Danquah', 
-      email: 'evelyn.danquah@investments.gh', 
-      phone: '+233 20 111 2222',
-      avatar: 'https://ui-avatars.com/api/?name=Evelyn+A&background=6366f1&color=fff',
-      category: 'Institutional Investor',
-      budget: '₵ 5,000,000+',
-      minBudget: 5000000,
-      interest: 'The Apex Commercial Tower',
-      status: 'Warm Prospect',
-      source: 'Direct Executive Referral',
-      lastInteraction: 'Requested financial yield analysis & occupancy projections',
-      assignedAgent: 'Pam Beesly'
-    },
-    { 
-      id: 'PR-203', 
-      name: 'Kwadwo Asamoah', 
-      email: 'k.asamoah@miningholdings.com', 
-      phone: '+233 55 333 4444',
-      avatar: 'https://ui-avatars.com/api/?name=Kwadwo+A&background=f59e0b&color=fff',
-      category: 'VIP Buyer',
-      budget: '₵ 800,000 - ₵ 1,200,000',
-      minBudget: 800000,
-      interest: 'Green Valley Eco Estate (Land)',
-      status: 'Hot Lead',
-      source: 'Website Inquiry',
-      lastInteraction: 'Site inspection completed; requested titled indenture drafts',
-      assignedAgent: 'Dwight Schrute'
-    },
-    { 
-      id: 'PR-204', 
-      name: 'Jessica Tetteh', 
-      email: 'jessica.t@designstudio.gh', 
-      phone: '+233 27 555 6666',
-      avatar: 'https://ui-avatars.com/api/?name=Jessica+T&background=ec4899&color=fff',
-      category: 'First-Time Buyer',
-      budget: '₵ 450,000 - ₵ 650,000',
-      minBudget: 450000,
-      interest: 'Palm Breeze Beach Residences',
-      status: 'Nurture',
-      source: 'Social Media Campaign',
-      lastInteraction: 'Downloaded digital brochure on 12 May',
-      assignedAgent: 'Phyllis Vance'
-    },
-    { 
-      id: 'PR-205', 
-      name: 'Nana Yaw Boakye', 
-      email: 'ny.boakye@kensington.co.uk', 
-      phone: '+44 7700 900077',
-      avatar: 'https://ui-avatars.com/api/?name=Nana+Y&background=10b981&color=fff',
-      category: 'Diaspora Buyer',
-      budget: '₵ 2,000,000 - ₵ 3,500,000',
-      minBudget: 2000000,
-      interest: 'Sunset Hills Luxury Villas',
-      status: 'Hot Lead',
-      source: 'London Property Expo',
-      lastInteraction: 'Video conference setup with legal advisor on 15 May',
-      assignedAgent: 'Louis Kemenyo'
-    },
-  ]);
+  const [prospects, setProspects] = useState(() => {
+    return getStoredCrmProspects();
+  });
+
+  // Sync state when coming back from other modules or periodically
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setProspects(getStoredCrmProspects());
+    };
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('realtyos_buyers_update', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('realtyos_buyers_update', handleStorageChange);
+    };
+  }, []);
+
+  const saveProspects = (updated) => {
+    setProspects(updated);
+    saveStoredCrmProspects(updated);
+  };
 
   const cleanPhoneForWhatsApp = (phoneStr) => {
     return phoneStr.replace(/[\s\+\-\(\)]/g, '');
@@ -121,9 +68,49 @@ const Buyers = () => {
       assignedAgent: formData.get('agent')
     };
 
-    setProspects([newProspect, ...prospects]);
+    const updated = [newProspect, ...prospects];
+    saveProspects(updated);
     setShowAddModal(false);
     setSuccessMessage(`Successfully registered ${newProspect.name} in CRM!`);
+    setTimeout(() => setSuccessMessage(''), 4000);
+  };
+
+  const handleDeleteProspect = (id, name) => {
+    if (window.confirm(`⚠️ CONFIRMATION: Are you sure you want to permanently delete prospect "${name}" from the CRM?`)) {
+      const updated = prospects.filter(p => p.id !== id);
+      saveProspects(updated);
+      setSuccessMessage(`Prospect "${name}" successfully deleted.`);
+      setTimeout(() => setSuccessMessage(''), 4000);
+    }
+  };
+
+  const handleEditProspectSubmit = (e) => {
+    e.preventDefault();
+    if (!activeEditProspect) return;
+    const formData = new FormData(e.target);
+    const minBudgetVal = parseFloat(formData.get('minBudget')) || activeEditProspect.minBudget;
+
+    const updated = prospects.map(p => {
+      if (p.id === activeEditProspect.id) {
+        return {
+          ...p,
+          name: formData.get('name'),
+          email: formData.get('email'),
+          phone: formData.get('phone'),
+          category: formData.get('category'),
+          budget: `₵ ${parseInt(formData.get('minBudget')).toLocaleString()} - ₵ ${parseInt(formData.get('maxBudget')).toLocaleString()}`,
+          minBudget: minBudgetVal,
+          interest: formData.get('interest'),
+          status: formData.get('status'),
+          assignedAgent: formData.get('agent')
+        };
+      }
+      return p;
+    });
+
+    saveProspects(updated);
+    setActiveEditProspect(null);
+    setSuccessMessage(`Prospect "${formData.get('name')}" modified successfully!`);
     setTimeout(() => setSuccessMessage(''), 4000);
   };
 
@@ -134,7 +121,7 @@ const Buyers = () => {
     const prospect = activeMsgProspect;
     
     // Update CRM state
-    setProspects(prospects.map(p => {
+    const updated = prospects.map(p => {
       if (p.id === prospect.id) {
         return { 
           ...p, 
@@ -142,7 +129,8 @@ const Buyers = () => {
         };
       }
       return p;
-    }));
+    });
+    saveProspects(updated);
 
     // Trigger external WhatsApp or Mailto
     if (msgChannel === 'whatsapp') {
@@ -180,7 +168,7 @@ const Buyers = () => {
       `_Attachments Included: Titled Indenture Draft, Official Brochure & Floor/Site Plan._`;
 
     // Update CRM state
-    setProspects(prospects.map(p => {
+    const updated = prospects.map(p => {
       if (p.id === prospect.id) {
         return { 
           ...p, 
@@ -189,7 +177,8 @@ const Buyers = () => {
         };
       }
       return p;
-    }));
+    });
+    saveProspects(updated);
     
     // Trigger external link
     if (offerChannel === 'whatsapp') {
@@ -491,7 +480,21 @@ const Buyers = () => {
                     <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--primary)' }} />
                     Agent: <strong style={{ color: 'var(--text-main)' }}>{prospect.assignedAgent}</strong>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button 
+                      onClick={() => { setActiveEditProspect(prospect); }}
+                      title="Edit Prospect Details" 
+                      style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#f1f5f9', border: '1px solid #e2e8f0', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: '0.2s' }}
+                    >
+                      <Edit3 size={16} />
+                    </button>
+                    <button 
+                      onClick={() => { handleDeleteProspect(prospect.id, prospect.name); }}
+                      title="Delete Prospect" 
+                      style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#fee2e2', border: '1px solid #fca5a5', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: '0.2s' }}
+                    >
+                      <Trash2 size={16} />
+                    </button>
                     <button 
                       onClick={() => { setActiveMsgProspect(prospect); setMsgChannel('whatsapp'); }}
                       title="Send Message (WhatsApp/Email)" 
@@ -761,6 +764,111 @@ const Buyers = () => {
                 <button type="submit" style={{ backgroundColor: 'var(--primary)', color: 'white', border: 'none', padding: '16px', borderRadius: '14px', fontSize: '15px', fontWeight: '800', marginTop: '12px', cursor: 'pointer', boxShadow: '0 10px 20px -5px rgba(0, 135, 90, 0.4)', transition: 'all 0.2s' }}>
                   Register Verified VIP Prospect
                 </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Prospect Modal */}
+      <AnimatePresence>
+        {activeEditProspect && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              style={{ background: 'white', padding: '40px', borderRadius: '28px', width: '580px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+                <div>
+                  <h3 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-main)' }}>Modify VIP Prospect</h3>
+                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '500', marginTop: '4px' }}>Edit buyer profile, capacities, and target interests</p>
+                </div>
+                <button onClick={() => setActiveEditProspect(null)} style={{ background: '#f1f5f9', border: 'none', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                  <X size={20} />
+                </button>
+              </div>
+
+              <form onSubmit={handleEditProspectSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Full Name / Corporate Entity</label>
+                  <input name="name" type="text" defaultValue={activeEditProspect.name} required style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-dark)', fontSize: '14px', fontWeight: '500', background: '#f8fafc' }} />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div>
+                    <label style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Email Address</label>
+                    <input name="email" type="email" defaultValue={activeEditProspect.email} required style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-dark)', fontSize: '14px', fontWeight: '500', background: '#f8fafc' }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>WhatsApp / Phone</label>
+                    <input name="phone" type="text" defaultValue={activeEditProspect.phone} required style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-dark)', fontSize: '14px', fontWeight: '500', background: '#f8fafc' }} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div>
+                    <label style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Buyer Classification</label>
+                    <select name="category" defaultValue={activeEditProspect.category} required style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-dark)', fontSize: '14px', fontWeight: '600', background: '#f8fafc' }}>
+                      <option value="High Net Worth">High Net Worth</option>
+                      <option value="Institutional Investor">Institutional Investor</option>
+                      <option value="VIP Buyer">VIP Buyer</option>
+                      <option value="Diaspora Buyer">Diaspora Buyer</option>
+                      <option value="First-Time Buyer">First-Time Buyer</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>CRM Lead Status</label>
+                    <select name="status" defaultValue={activeEditProspect.status} required style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-dark)', fontSize: '14px', fontWeight: '600', background: '#f8fafc' }}>
+                      <option value="Hot Lead">🔥 Hot Lead</option>
+                      <option value="Warm Prospect">⚡ Warm Prospect</option>
+                      <option value="Nurture">❄️ Long-Term Nurture</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div>
+                    <label style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Min. Budget Cap (₵)</label>
+                    <input name="minBudget" type="number" defaultValue={activeEditProspect.minBudget} required style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-dark)', fontSize: '14px', fontWeight: '500', background: '#f8fafc' }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Max. Budget Cap (₵)</label>
+                    <input name="maxBudget" type="number" defaultValue={parseInt(activeEditProspect.budget.split('-')[1]?.replace(/[^0-9]/g, '')) || activeEditProspect.minBudget + 1000000} required style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-dark)', fontSize: '14px', fontWeight: '500', background: '#f8fafc' }} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div>
+                    <label style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Target Asset Interest</label>
+                    <select name="interest" defaultValue={activeEditProspect.interest} required style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-dark)', fontSize: '14px', fontWeight: '600', background: '#f8fafc' }}>
+                      <option value="Sunset Hills Luxury Villas">Sunset Hills Luxury Villas</option>
+                      <option value="Green Valley Eco Estate (Land)">Green Valley Eco Estate (Land)</option>
+                      <option value="The Apex Commercial Tower">The Apex Commercial Tower</option>
+                      <option value="Riverside Residencies">Riverside Residencies</option>
+                      <option value="Osu Oxford Street Retail Hub">Osu Oxford Street Retail Hub</option>
+                      <option value="Airport City Plaza">Airport City Plaza</option>
+                      <option value="Spintex Industrial Warehouse">Spintex Industrial Warehouse</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Assigned Agent</label>
+                    <select name="agent" defaultValue={activeEditProspect.assignedAgent} required style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-dark)', fontSize: '14px', fontWeight: '600', background: '#f8fafc' }}>
+                      <option value="Osei Kwame (Senior Broker)">Osei Kwame (Senior Broker)</option>
+                      <option value="Ama Asare (Investment Advisor)">Ama Asare (Investment Advisor)</option>
+                      <option value="Kofi Mensah (Property Consultant)">Kofi Mensah (Property Consultant)</option>
+                      <option value="Grace Addo (Wealth Manager)">Grace Addo (Wealth Manager)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '16px', marginTop: '12px' }}>
+                  <button type="button" onClick={() => setActiveEditProspect(null)} style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#475569', padding: '16px 28px', borderRadius: '14px', fontWeight: '800', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
+                  <button type="submit" style={{ backgroundColor: 'var(--primary)', color: 'white', border: 'none', padding: '16px 36px', borderRadius: '14px', fontSize: '14px', fontWeight: '800', cursor: 'pointer', boxShadow: '0 10px 25px rgba(0, 135, 90, 0.4)' }}>
+                    Save Modifications
+                  </button>
+                </div>
               </form>
             </motion.div>
           </div>

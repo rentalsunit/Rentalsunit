@@ -24,7 +24,7 @@ export const defaultRentalProperties = [
     units: 32, 
     status: 'Stable',
     type: '🏢 Residential Apartment Complex',
-    image: 'https://images.unsplash.com/photo-1460317442991-0ec239397148?auto=format&fit=crop&w=800&q=80',
+    image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80',
     icon: '🏢 Apartment Complex'
   },
   { 
@@ -355,15 +355,25 @@ export const saveStoredLeases = (leases) => {
 // ==========================================
 
 export const defaultUsers = [
-  { id: 'USR-1', name: 'Louis Kemenyo', username: 'louis.kemenyo', pass: 'password', email: 'louis.kemenyo@realtyos.gh', phone: '+233 54 102 9384', role: 'Executive Administrator', department: 'Executive Management', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80', lastLogin: '2026-05-18', securityQuestion: 'What was the name of your first school?', securityAnswer: 'st augustine' },
-  { id: 'USR-2', name: 'Sarah Miller', username: 'sarah.miller', pass: 'ManagerSecure88!', email: 'sarah.miller@realtyos.gh', phone: '+233 20 882 1092', role: 'Senior Property Manager', department: 'Sales & Leasing', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80', lastLogin: '2026-05-18', securityQuestion: 'What is your mother\'s maiden name?', securityAnswer: 'johnson' },
-  { id: 'USR-3', name: 'Michael K.', username: 'michael.k', pass: 'MaintFlow992!', email: 'michael.k@realtyos.gh', phone: '+233 24 771 2930', role: 'Facility Dispatch Engineer', department: 'Operations & Maintenance', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80', lastLogin: '2026-05-18', securityQuestion: 'What was the name of your childhood best friend?', securityAnswer: 'kweku' },
-  { id: 'USR-4', name: 'Sarah Osei', username: 'sarah.osei', pass: 'FinanceVault771!', email: 'sarah.osei@realtyos.gh', phone: '+233 55 901 8823', role: 'Financial Controller', department: 'Finance & Accounts', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80', lastLogin: '2026-05-18', securityQuestion: 'What city were you born in?', securityAnswer: 'kumasi' }
+  { id: 'USR-1', name: 'Louis Kemenyo', username: 'louis.kemenyo', pass: 'password', email: 'louis.kemenyo@realtyos.gh', phone: '+233 54 102 9384', role: 'Executive Administrator', department: 'Executive Management', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80', lastLogin: 'Active Now', securityQuestion: 'What was the name of your first school?', securityAnswer: 'st augustine' },
+  { id: 'USR-2', name: 'Sarah Miller', username: 'sarah.miller', pass: 'ManagerSecure88!', email: 'sarah.miller@realtyos.gh', phone: '+233 20 882 1092', role: 'Senior Property Manager', department: 'Sales & Leasing', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80', lastLogin: '12 minutes ago', securityQuestion: 'What is your mother\'s maiden name?', securityAnswer: 'johnson' },
+  { id: 'USR-3', name: 'Michael K.', username: 'michael.k', pass: 'MaintFlow992!', email: 'michael.k@realtyos.gh', phone: '+233 24 771 2930', role: 'Facility Dispatch Engineer', department: 'Operations & Maintenance', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80', lastLogin: '3 hours ago', securityQuestion: 'What was the name of your childhood best friend?', securityAnswer: 'kweku' },
+  { id: 'USR-4', name: 'Sarah Osei', username: 'sarah.osei', pass: 'FinanceVault771!', email: 'sarah.osei@realtyos.gh', phone: '+233 55 901 8823', role: 'Financial Controller', department: 'Finance & Accounts', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80', lastLogin: 'Yesterday, 4:30 PM', securityQuestion: 'What city were you born in?', securityAnswer: 'kumasi' }
 ];
 
 export const getStoredUsers = () => {
   const list = getLocalData('realtyos_users_list', defaultUsers);
-  return list.map(u => u.username === 'louis.kemenyo' ? { ...u, pass: 'password' } : u);
+  // Auto-migrate old '2026-05-18' dates to their realistic matches
+  const migratedList = list.map(u => {
+    if (u.lastLogin === '2026-05-18') {
+      const match = defaultUsers.find(du => du.id === u.id);
+      if (match) {
+        return { ...u, lastLogin: match.lastLogin };
+      }
+    }
+    return u;
+  });
+  return migratedList.map(u => u.username === 'louis.kemenyo' ? { ...u, pass: 'password' } : u);
 };
 export const saveStoredUsers = (users) => saveToSupabaseAndStorage('users', 'realtyos_users_list', users, 'realtyos_users_update');
 
@@ -490,6 +500,28 @@ export const defaultStaffLoans = [
 export const getStoredStaffLoans = () => getLocalData('realtyos_staff_loans', defaultStaffLoans);
 export const saveStoredStaffLoans = (loans) => saveToSupabaseAndStorage('staff_loans', 'realtyos_staff_loans', loans, 'realtyos_staff_update');
 
+export const defaultStaffSanctions = [
+  { id: 'SNC-901', employee: 'Kofi Antwi', date: '12 May 2026', infraction: 'Repeated Unexcused Tardiness & Absence', severity: 'Written Warning & Pay Dock', issuer: 'Michael K.', notes: 'Arrived 3 hours late to emergency water line repair without prior notification.' }
+];
+
+export const getStoredStaffSanctions = () => getLocalData('realtyos_staff_sanctions', defaultStaffSanctions);
+export const saveStoredStaffSanctions = (sanctions) => saveToSupabaseAndStorage('staff_sanctions', 'realtyos_staff_sanctions', sanctions, 'realtyos_staff_update');
+
+export const defaultStaffAppraisals = [
+  { id: 'APR-501', employee: 'Sarah Miller', reviewer: 'Louis Kemenyo', date: '10 May 2026', rating: 4.9, keyAchievements: 'Exceeded Q1 luxury apartment leasing targets by 34%.', recommendation: 'Promote to Executive VP of Sales with 15% salary bump.' }
+];
+
+export const getStoredStaffAppraisals = () => getLocalData('realtyos_staff_appraisals', defaultStaffAppraisals);
+export const saveStoredStaffAppraisals = (appraisals) => saveToSupabaseAndStorage('staff_appraisals', 'realtyos_staff_appraisals', appraisals, 'realtyos_staff_update');
+
+export const defaultStaffPayroll = [
+  { id: 'PAY-2026-05', monthYear: 'May 2026', totalStaff: 8, grossAmount: 103200, formattedGross: '₵ 103,200', loanDeductions: 2493, formattedDeductions: '-₵ 2,493', netAmount: 100707, formattedNet: '₵ 100,707', status: 'Pending Finance Sign-off', runDate: '16 May 2026', runBy: 'HR Officer (Sarah M.)' },
+  { id: 'PAY-2026-04', monthYear: 'April 2026', totalStaff: 8, grossAmount: 103200, formattedGross: '₵ 103,200', loanDeductions: 2493, formattedDeductions: '-₵ 2,493', netAmount: 100707, formattedNet: '₵ 100,707', status: 'Approved & Disbursed', runDate: '28 Apr 2026', runBy: 'Finance Director' }
+];
+
+export const getStoredStaffPayroll = () => getLocalData('realtyos_staff_payroll', defaultStaffPayroll);
+export const saveStoredStaffPayroll = (payroll) => saveToSupabaseAndStorage('staff_payroll', 'realtyos_staff_payroll', payroll, 'realtyos_staff_update');
+
 export const defaultFinancialVouchers = [
   { id: 'TRX-5001', type: 'Income', source: 'Rent', property: 'Sunset Luxury Apartments', category: 'Rent - Unit 302 (6 Months Advance)', amount: 12500, formattedAmount: '₵ 12,500', date: '15 May 2026', status: 'Approved', officer: 'Sarah Osei', payerRecipient: 'Tenant: Kwame Mensah', paymentMethod: 'Bank Transfer', refNo: 'GTB-902184920', notes: 'Unit: #302 | Coverage: May 2026 - Nov 2026 | Full advance rent received.' },
   { id: 'TRX-5002', type: 'Income', source: 'Sales', property: 'Green Valley Estate', category: 'Plot 12 Acquisition (Initial Deposit)', amount: 150000, formattedAmount: '₵ 150,000', date: '14 May 2026', status: 'Approved', officer: 'Louis Kemenyo', payerRecipient: 'Buyer: Dr. Evelyn Addo', paymentMethod: 'Cheque', refNo: 'SCB-8839201', notes: 'Asset: Plot 12 | Initial 30% deposit secured. Sale agreement endorsed.' },
@@ -553,9 +585,48 @@ export const initCloudSync = async () => {
     syncTableWithStorage('staff_leaves', 'realtyos_staff_leaves', defaultStaffLeaves, 'realtyos_staff_update'),
     syncTableWithStorage('staff_attendance', 'realtyos_staff_attendance', defaultStaffAttendance, 'realtyos_staff_update'),
     syncTableWithStorage('staff_loans', 'realtyos_staff_loans', defaultStaffLoans, 'realtyos_staff_update'),
+    syncTableWithStorage('staff_sanctions', 'realtyos_staff_sanctions', defaultStaffSanctions, 'realtyos_staff_update'),
+    syncTableWithStorage('staff_appraisals', 'realtyos_staff_appraisals', defaultStaffAppraisals, 'realtyos_staff_update'),
+    syncTableWithStorage('staff_payroll', 'realtyos_staff_payroll', defaultStaffPayroll, 'realtyos_staff_update'),
     syncTableWithStorage('financial_vouchers', 'realtyos_financial_vouchers', defaultFinancialVouchers, 'realtyos_finance_update'),
     syncTableWithStorage('staff_tasks', 'realtyos_staff_tasks', defaultStaffTasks, 'realtyos_tasks_update'),
     syncTableWithStorage('crm_prospects', 'realtyos_crm_prospects', defaultCrmProspects, 'realtyos_buyers_update'),
     syncTableWithStorage('vault_documents', 'realtyos_vault_documents', defaultVaultDocuments, 'realtyos_docs_update')
   ]);
 };
+
+/**
+ * Enterprise Production Launch Purge Pipeline
+ * Wipes every single mockup and sandbox database entity from both localStorage and Supabase,
+ * while safely retaining executive administrator credentials for Louis Kemenyo.
+ */
+export const wipeAllMockData = async () => {
+  // 1. Prepare safe admin configurations to prevent logouts and lockouts
+  const adminUsers = defaultUsers.filter(u => u.id === 'USR-1');
+  const adminEmployees = defaultStaffEmployees.filter(e => e.id === 'EMP-K9X2');
+
+  // 2. Clear all local/cloud data models in parallel using the standard storage sync engine
+  await Promise.all([
+    saveStoredProperties([]),
+    saveStoredUnits([]),
+    saveStoredTenants([]),
+    saveStoredLeases([]),
+    saveStoredSalesProperties([]),
+    saveStoredSalesDeals([]),
+    saveStoredMaintenanceTickets([]),
+    saveStoredStaffLeaves([]),
+    saveStoredStaffAttendance([]),
+    saveStoredStaffLoans([]),
+    saveStoredStaffSanctions([]),
+    saveStoredStaffAppraisals([]),
+    saveStoredStaffPayroll([]),
+    saveStoredFinancialVouchers([]),
+    saveStoredStaffTasks([]),
+    saveStoredCrmProspects([]),
+    saveStoredVaultDocuments([]),
+    saveStoredNotifications([]),
+    saveStoredUsers(adminUsers),
+    saveStoredStaffEmployees(adminEmployees)
+  ]);
+};
+

@@ -9,6 +9,7 @@ import {
   MoveHorizontal, ArrowLeftRight, FileText, Calculator, CreditCard, Handshake, CheckSquare, Square, Check, Printer, Wallet
 } from 'lucide-react';
 import { generateRealPDF } from '../lib/pdfService';
+import { getStoredSalesDeals, saveStoredSalesDeals, saveStoredSalesProperties } from '../lib/masterData';
 
 const Sales = () => {
   const [viewMode, setViewMode] = useState('kanban'); // kanban or list
@@ -50,276 +51,12 @@ const Sales = () => {
   ]);
   const [activePipelineId, setActivePipelineId] = useState('all');
 
-  // Deals state with localStorage persistence
-  const [deals, setDeals] = useState(() => {
-    const saved = localStorage.getItem('realtyos_sales_deals');
-    if (saved) {
-      try { return JSON.parse(saved); } catch(e) {}
-    }
-    return [
-      { 
-        id: 'SDL-101', 
-        pipelineId: 'pl-1',
-        title: 'Villa 14 Acquisition',
-        property: 'Sunset Hills Luxury Villas', 
-        unit: 'Villa 14',
-        client: 'Michael Osei-Mensah', 
-        clientPhone: '+233 24 888 9999',
-        price: '₵ 850,000', 
-        numericPrice: 850000,
-        paymentMode: 'Installment',
-        depositPaid: 250000,
-        remainingBalance: 600000,
-        months: 24,
-        monthlyInstallment: 25000,
-        installmentLogs: [
-          { date: '14 May 2026', amount: 250000, ref: 'TX-DEP-8841', note: 'Initial 30% Downpayment Deposit via RTGS' }
-        ],
-        stage: 'Contract Pending', 
-        probability: '90%', 
-        agent: 'Louis Kemenyo', 
-        agentAvatar: 'https://ui-avatars.com/api/?name=Louis+K&background=00875a&color=fff',
-        type: 'House',
-        date: '14 May 2026',
-        notes: 'Official property sale & structured 24-month installment contract executed.'
-      },
-      { 
-        id: 'SDL-102', 
-        pipelineId: 'pl-3',
-        title: 'Executive Suite Lease & Option',
-        property: 'The Apex Commercial Tower', 
-        unit: 'Suite 12-B',
-        client: 'Serwaa Amihere', 
-        clientPhone: '+233 20 987 6543',
-        price: '₵ 2,500,000', 
-        numericPrice: 2500000,
-        paymentMode: 'Upfront',
-        depositPaid: 2500000,
-        remainingBalance: 0,
-        months: 1,
-        monthlyInstallment: 0,
-        installmentLogs: [
-          { date: '15 May 2026', amount: 2500000, ref: 'TX-FULL-9901', note: '100% Upfront Wire Transfer Fully Cleared' }
-        ],
-        stage: 'Closed Won', 
-        probability: '100%', 
-        agent: 'Pam Beesly', 
-        agentAvatar: 'https://ui-avatars.com/api/?name=Pam+B&background=6366f1&color=fff',
-        type: 'Commercial',
-        date: '15 May 2026',
-        notes: 'Keys transferred and corporate occupancy granted.'
-      },
-      { 
-        id: 'SDL-103', 
-        pipelineId: 'pl-2',
-        title: '4x Serviced Plots Bundle',
-        property: 'Green Valley Eco Estate', 
-        unit: 'Plots 40-43',
-        client: 'Kwadwo Asamoah', 
-        clientPhone: '+233 55 333 4444',
-        price: '₵ 480,000', 
-        numericPrice: 480000,
-        paymentMode: 'Installment',
-        depositPaid: 180000,
-        remainingBalance: 300000,
-        months: 12,
-        monthlyInstallment: 25000,
-        installmentLogs: [
-          { date: '10 May 2026', amount: 180000, ref: 'TX-DEP-3312', note: 'Initial Land Deposit Paid' }
-        ],
-        stage: 'Contract Pending', 
-        probability: '95%', 
-        agent: 'Phyllis Vance', 
-        agentAvatar: 'https://ui-avatars.com/api/?name=Phyllis+V&background=f59e0b&color=fff',
-        type: 'Land',
-        date: '10 May 2026',
-        notes: 'Indenture agreements currently with buyer lawyers for endorsement.'
-      },
-      { 
-        id: 'SDL-104', 
-        pipelineId: 'pl-2',
-        title: 'Beachfront Plot Premium',
-        property: 'Palm Breeze Beach Residences', 
-        unit: 'Plot B-07',
-        client: 'David Hammond', 
-        clientPhone: '+233 27 777 8888',
-        price: '₵ 600,000', 
-        numericPrice: 600000,
-        paymentMode: 'Installment',
-        depositPaid: 150000,
-        remainingBalance: 450000,
-        months: 18,
-        monthlyInstallment: 25000,
-        installmentLogs: [
-          { date: '16 May 2026', amount: 150000, ref: 'TX-DEP-7700', note: 'Reservation deposit received' }
-        ],
-        stage: 'Inquiry', 
-        probability: '25%', 
-        agent: 'Angela Martin', 
-        agentAvatar: 'https://ui-avatars.com/api/?name=Angela+M&background=ec4899&color=fff',
-        type: 'Land',
-        date: '16 May 2026',
-        notes: 'First inquiry received via online portal.'
-      },
-      { 
-        id: 'SDL-105', 
-        pipelineId: 'pl-1',
-        title: 'Penthouse Suite 10B',
-        property: 'Sunset Hills Luxury Villas', 
-        unit: 'Penthouse 10B',
-        client: 'Victoria Kemenyo', 
-        clientPhone: '+233 24 999 1111',
-        price: '₵ 1,200,000', 
-        numericPrice: 1200000,
-        paymentMode: 'Upfront',
-        depositPaid: 1200000,
-        remainingBalance: 0,
-        months: 1,
-        monthlyInstallment: 0,
-        installmentLogs: [
-          { date: '01 May 2026', amount: 1200000, ref: 'TX-FULL-5544', note: 'Full upfront bank draft deposit' }
-        ],
-        stage: 'Closed Won', 
-        probability: '100%', 
-        agent: 'Louis Kemenyo', 
-        agentAvatar: 'https://ui-avatars.com/api/?name=Louis+K&background=10b981&color=fff',
-        type: 'Apartment',
-        date: '01 May 2026',
-        notes: 'Full deposit received and keys handed over.'
-      },
-      { 
-        id: 'SDL-106', 
-        pipelineId: 'pl-3',
-        title: 'Ground Floor Retail Anchor',
-        property: 'The Apex Commercial Tower', 
-        unit: 'Retail Space GF-01',
-        client: 'Melcom Superstores', 
-        clientPhone: '+233 30 255 5555',
-        price: '₵ 4,200,000', 
-        numericPrice: 4200000,
-        paymentMode: 'Installment',
-        depositPaid: 1200000,
-        remainingBalance: 3000000,
-        months: 30,
-        monthlyInstallment: 100000,
-        installmentLogs: [
-          { date: '14 May 2026', amount: 1200000, ref: 'TX-DEP-9988', note: 'Fit-out commitment deposit' }
-        ],
-        stage: 'Negotiation', 
-        probability: '75%', 
-        agent: 'Louis Kemenyo', 
-        agentAvatar: 'https://ui-avatars.com/api/?name=Louis+K&background=10b981&color=fff',
-        type: 'Commercial',
-        date: '14 May 2026',
-        notes: 'Finalizing fit-out grace period and long-term lease terms.'
-      },
-      { 
-        id: 'SDL-107', 
-        pipelineId: 'pl-2',
-        title: 'Serviced Ridge Plot C4',
-        property: 'Green Valley Eco Estate', 
-        unit: 'Plot C4',
-        client: 'Dr. Michael Sarpong', 
-        clientPhone: '+233 24 888 7777',
-        price: '₵ 550,000', 
-        numericPrice: 550000,
-        paymentMode: 'Upfront',
-        depositPaid: 550000,
-        remainingBalance: 0,
-        months: 1,
-        monthlyInstallment: 0,
-        installmentLogs: [
-          { date: '05 May 2026', amount: 550000, ref: 'TX-FULL-2211', note: 'Direct cash bank deposit fully verified' }
-        ],
-        stage: 'Closed Won', 
-        probability: '100%', 
-        agent: 'Phyllis Vance', 
-        agentAvatar: 'https://ui-avatars.com/api/?name=Phyllis+V&background=f59e0b&color=fff',
-        type: 'Land',
-        date: '05 May 2026',
-        notes: 'Deed transferred and land title registered.'
-      },
-      { 
-        id: 'SDL-108', 
-        pipelineId: 'pl-3',
-        title: 'Corporate Office Wing 4A',
-        property: 'The Apex Commercial Tower', 
-        unit: 'Wing 4A',
-        client: 'Standard Chartered Bank', 
-        clientPhone: '+233 30 222 1111',
-        price: '₵ 3,800,000', 
-        numericPrice: 3800000,
-        paymentMode: 'Upfront',
-        depositPaid: 3800000,
-        remainingBalance: 0,
-        months: 1,
-        monthlyInstallment: 0,
-        installmentLogs: [
-          { date: '28 Apr 2026', amount: 3800000, ref: 'TX-FULL-0012', note: 'Institutional corporate wire cleared' }
-        ],
-        stage: 'Closed Won', 
-        probability: '100%', 
-        agent: 'Louis Kemenyo', 
-        agentAvatar: 'https://ui-avatars.com/api/?name=Louis+K&background=10b981&color=fff',
-        type: 'Commercial',
-        date: '28 Apr 2026',
-        notes: '10-year master lease agreement executed.'
-      },
-      { 
-        id: 'SDL-109', 
-        pipelineId: 'pl-1',
-        title: 'Luxury Duplex Villa 2',
-        property: 'Sunset Hills Luxury Villas', 
-        unit: 'Duplex Villa 2',
-        client: 'Kojo Antwi', 
-        clientPhone: '+233 50 111 2222',
-        price: '₵ 950,000', 
-        numericPrice: 950000,
-        paymentMode: 'Installment',
-        depositPaid: 0,
-        remainingBalance: 950000,
-        months: 12,
-        monthlyInstallment: 79166,
-        installmentLogs: [],
-        stage: 'Closed Lost', 
-        probability: '0%', 
-        agent: 'Angela Martin', 
-        agentAvatar: 'https://ui-avatars.com/api/?name=Angela+M&background=ec4899&color=fff',
-        type: 'House',
-        date: '20 Apr 2026',
-        notes: 'Client selected a competing development due to immediate move-in requirement. [Lost Reason: Timeline constraint]'
-      },
-      { 
-        id: 'SDL-110', 
-        pipelineId: 'pl-1',
-        title: 'Garden Apartment 3B Inquiry',
-        property: 'Sunset Hills Luxury Villas', 
-        unit: 'Apartment 3B',
-        client: 'Esi Mansah', 
-        clientPhone: '+233 20 444 5555',
-        price: '₵ 620,000', 
-        numericPrice: 620000,
-        paymentMode: 'Installment',
-        depositPaid: 0,
-        remainingBalance: 620000,
-        months: 18,
-        monthlyInstallment: 34444,
-        installmentLogs: [],
-        stage: 'Inquiry', 
-        probability: '30%', 
-        agent: 'Louis Kemenyo', 
-        agentAvatar: 'https://ui-avatars.com/api/?name=Louis+K&background=10b981&color=fff',
-        type: 'Apartment',
-        date: '16 May 2026',
-        notes: 'Requested brochure and pricing schedule for 2-bedroom units.'
-      },
-    ];
-  });
+  // Deals state with localStorage persistence and cloud sync
+  const [deals, setDeals] = useState(() => getStoredSalesDeals());
 
   const saveDealsToStorage = (updatedDeals) => {
     setDeals(updatedDeals);
-    localStorage.setItem('realtyos_sales_deals', JSON.stringify(updatedDeals));
-    window.dispatchEvent(new Event('storage'));
+    saveStoredSalesDeals(updatedDeals); // This dispatches 'realtyos_sales_deals_update' natively
   };
 
   const handleDelinkUnit = (dealId) => {
@@ -344,8 +81,7 @@ const Sales = () => {
           }
           return p;
         });
-        localStorage.setItem('realtyos_sales_properties', JSON.stringify(updatedProps));
-        window.dispatchEvent(new Event('storage'));
+        saveStoredSalesProperties(updatedProps);
       } catch(e) {}
     }
 
@@ -463,8 +199,7 @@ const Sales = () => {
           }
           return p;
         });
-        localStorage.setItem('realtyos_sales_properties', JSON.stringify(updatedProps));
-        window.dispatchEvent(new Event('storage'));
+        saveStoredSalesProperties(updatedProps);
       } catch(e) {}
     }
 

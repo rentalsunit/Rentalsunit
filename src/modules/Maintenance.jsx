@@ -5,139 +5,30 @@ import {
   Plus, Building, User, DollarSign, FileText, X, ShieldAlert, 
   ArrowUpRight, HardHat, RefreshCw, Layers
 } from 'lucide-react';
-import { getStoredProperties, getStoredUnits } from '../lib/masterData';
+import { getStoredProperties, getStoredUnits, getStoredMaintenanceTickets, saveStoredMaintenanceTickets } from '../lib/masterData';
 import { generateRealPDF } from '../lib/pdfService';
 
 const Maintenance = () => {
   const [requests, setRequests] = useState(() => {
-    const saved = localStorage.getItem('realtyos_maintenance_tickets');
-    if (saved) {
-      try { return JSON.parse(saved); } catch(err) {}
-    }
-    return [
-      { 
-        id: 'MNT-8001', 
-        property: 'Sunset Luxury Apartments', 
-        unit: 'Unit 104', 
-        category: 'Plumbing',
-        title: 'Main Water Line Burst & Pressure Drop', 
-        priority: 'Urgent', 
-        status: 'In Progress', 
-        loggedBy: 'David Wilson', 
-        assignedTo: 'QuickFix Plumbing Engineers', 
-        estCost: 3500, 
-        formattedCost: '₵ 3,500', 
-        date: '16 May 2026',
-        notes: 'Emergency shut-off activated. Plumbers currently on site replacing damaged copper valve.'
-      },
-      { 
-        id: 'MNT-8002', 
-        property: 'The Apex Commercial Tower', 
-        unit: '12th Floor West Wing', 
-        category: 'HVAC',
-        title: 'Central Air Conditioning Compressor Failure', 
-        priority: 'High', 
-        status: 'Pending Approval', 
-        loggedBy: 'Michael K.', 
-        assignedTo: 'CoolTech HVAC Ltd', 
-        estCost: 18500, 
-        formattedCost: '₵ 18,500', 
-        date: '15 May 2026',
-        notes: 'Requires replacement of primary coolant coil and system refrigerant recharge.'
-      },
-      { 
-        id: 'MNT-8003', 
-        property: 'Green Valley Estate', 
-        unit: 'Villa 14', 
-        category: 'Electrical',
-        title: 'Main Breaker Tripping Continuously', 
-        priority: 'High', 
-        status: 'Assigned', 
-        loggedBy: 'Sarah Miller', 
-        assignedTo: 'VoltMaster Electricals', 
-        estCost: 1200, 
-        formattedCost: '₵ 1,200', 
-        date: '14 May 2026',
-        notes: 'Tenant reported sparking near kitchen high-voltage outlet. Circuit isolated safely.'
-      },
-      { 
-        id: 'MNT-8004', 
-        property: 'Sunset Luxury Apartments', 
-        unit: 'Common Area Penthouse', 
-        category: 'Elevator',
-        title: 'Passenger Elevator #2 Door Sensor Glitch', 
-        priority: 'Urgent', 
-        status: 'Completed', 
-        loggedBy: 'Louis Kemenyo', 
-        assignedTo: 'Otis Elevator Servicing', 
-        estCost: 8500, 
-        formattedCost: '₵ 8,500', 
-        date: '12 May 2026',
-        notes: 'Optical sensor realigned and recalibrated. Tested under load with zero faults.'
-      },
-      { 
-        id: 'MNT-8005', 
-        property: 'Palm Breeze Residences', 
-        unit: 'Poolside Lounge', 
-        category: 'Masonry & Tiling',
-        title: 'Cracked Non-Slip Tiles near Deep End', 
-        priority: 'Medium', 
-        status: 'Completed', 
-        loggedBy: 'David Wilson', 
-        assignedTo: 'In-house Maintenance Team', 
-        estCost: 1800, 
-        formattedCost: '₵ 1,800', 
-        date: '10 May 2026',
-        notes: 'Hazardous broken ceramic removed and replaced with high-friction quartz composite.'
-      },
-      { 
-        id: 'MNT-8006', 
-        property: 'The Apex Commercial Tower', 
-        unit: 'Basement Parking B2', 
-        category: 'Security Systems',
-        title: 'CCTV Camera #8 Feed Offline & Static', 
-        priority: 'Medium', 
-        status: 'In Progress', 
-        loggedBy: 'Security Chief', 
-        assignedTo: 'Securitas Tech Ops', 
-        estCost: 950, 
-        formattedCost: '₵ 950', 
-        date: '08 May 2026',
-        notes: 'Cat6 Ethernet line severed during cable duct cleaning. Splicing underway.'
-      },
-      { 
-        id: 'MNT-8007', 
-        property: 'Green Valley Estate', 
-        unit: 'Perimeter Gate 2', 
-        category: 'Carpentry / Structural',
-        title: 'Motorized Gate Hinge Realignment', 
-        priority: 'Low', 
-        status: 'Pending Approval', 
-        loggedBy: 'Sarah Miller', 
-        assignedTo: 'Fortress Metalworks', 
-        estCost: 2800, 
-        formattedCost: '₵ 2,800', 
-        date: '05 May 2026',
-        notes: 'Gate dragging against concrete track. Requires heavy welding and hydraulic grease.'
-      }
-    ];
+    return getStoredMaintenanceTickets();
   });
 
   // Listen for updates dispatched across modules (e.g. from Units.jsx)
   useEffect(() => {
     const handleUpdate = () => {
-      const saved = localStorage.getItem('realtyos_maintenance_tickets');
-      if (saved) {
-        try { setRequests(JSON.parse(saved)); } catch(err) {}
-      }
+      setRequests(getStoredMaintenanceTickets());
     };
-    window.addEventListener('maintenance_tickets_updated', handleUpdate);
-    return () => window.removeEventListener('maintenance_tickets_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    window.addEventListener('realtyos_maintenance_tickets_update', handleUpdate);
+    return () => {
+      window.removeEventListener('storage', handleUpdate);
+      window.removeEventListener('realtyos_maintenance_tickets_update', handleUpdate);
+    };
   }, []);
 
   const saveToStorage = (updatedList) => {
     setRequests(updatedList);
-    localStorage.setItem('realtyos_maintenance_tickets', JSON.stringify(updatedList));
+    saveStoredMaintenanceTickets(updatedList);
   };
 
   const [searchTerm, setSearchTerm] = useState('');

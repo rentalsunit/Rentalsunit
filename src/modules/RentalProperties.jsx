@@ -7,10 +7,21 @@ import {
   X, Check, Server, Eye, Key, DollarSign, 
   Layers, Maximize2, Shield, CheckCircle2, 
   AlertCircle, UserCheck, Hash, Wrench, ArrowUpRight,
-  Trash2, Edit3, Save, UserMinus, UserPlus, Calculator
+  Trash2, Edit3, Save, UserMinus, UserPlus, Calculator,
+  Store, Briefcase, Factory, Hexagon
 } from 'lucide-react';
 import { getThemedAsset } from '../lib/themeImages';
 import { getStoredProperties, saveStoredProperties, getStoredUnits, saveStoredUnits, getStoredLeases, saveStoredLeases, getStoredTenants, saveStoredTenants } from '../lib/masterData';
+
+export const getDynamicIconConfig = (type) => {
+  const t = (type || '').toLowerCase();
+  if (t.includes('shop') || t.includes('retail')) return { Icon: Store, bg: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', color: '#fffbeb' };
+  if (t.includes('office')) return { Icon: Briefcase, bg: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)', color: '#eff6ff' };
+  if (t.includes('villa')) return { Icon: Home, bg: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)', color: '#f5f3ff' };
+  if (t.includes('warehouse') || t.includes('industrial')) return { Icon: Factory, bg: 'linear-gradient(135deg, #64748b 0%, #334155 100%)', color: '#f8fafc' };
+  if (t.includes('mixed')) return { Icon: Hexagon, bg: 'linear-gradient(135deg, #14b8a6 0%, #0f766e 100%)', color: '#f0fdfa' };
+  return { Icon: Building2, bg: 'linear-gradient(135deg, #10b981 0%, #047857 100%)', color: '#ecfdf5' };
+};
 
 const RentalProperties = () => {
   const [viewMode, setViewMode] = useState('grid');
@@ -387,34 +398,48 @@ const RentalProperties = () => {
                 background: 'white'
               }}
             >
-              {/* Asset High-Res Cover Image - Compact */}
-              <div style={{ 
-                width: viewMode === 'grid' ? '100%' : '260px', 
-                height: viewMode === 'grid' ? '170px' : 'auto', 
-                position: 'relative', flexShrink: 0, overflow: 'hidden'
-              }}>
-                <img src={prop.image} alt={prop.name} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.6s ease' }} />
-                <div style={{ inset: 0, position: 'absolute', background: 'linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0) 30%, rgba(0,0,0,0.85) 100%)' }} />
-                
-                {/* Top Badges - Compact */}
-                <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(255,255,255,0.95)', padding: '6px 12px', borderRadius: '16px', fontSize: '11px', fontWeight: '900', color: 'var(--primary)', backdropFilter: 'blur(10px)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <span>{prop.icon || '🏢 Asset'}</span>
-                </div>
+              {/* Dynamic High-Res Vector Banner */}
+              {(() => {
+                const vectorConfig = getDynamicIconConfig(prop.type);
+                const VectorIcon = vectorConfig.Icon;
+                return (
+                  <div style={{ 
+                    width: viewMode === 'grid' ? '100%' : '260px', 
+                    height: viewMode === 'grid' ? '170px' : '100%', 
+                    position: 'relative', flexShrink: 0, overflow: 'hidden',
+                    background: vectorConfig.bg,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    {/* Subtle geometric pattern overlay */}
+                    <div style={{ position: 'absolute', inset: 0, opacity: 0.1, backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px' }}></div>
+                    
+                    <motion.div whileHover={{ scale: 1.1, rotate: 5 }} style={{ color: 'white', opacity: 0.9, filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.2))' }}>
+                      <VectorIcon size={72} strokeWidth={1.5} />
+                    </motion.div>
+                    
+                    <div style={{ inset: 0, position: 'absolute', background: 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.85) 100%)' }} />
+                    
+                    {/* Top Badges */}
+                    <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(255,255,255,0.95)', padding: '6px 12px', borderRadius: '16px', fontSize: '11px', fontWeight: '900', color: '#0f172a', backdropFilter: 'blur(10px)', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span>{prop.icon || '🏢 Asset'}</span>
+                    </div>
 
-                <div style={{ position: 'absolute', top: '12px', left: '12px', background: 'rgba(15, 23, 42, 0.85)', padding: '4px 10px', borderRadius: '12px', fontSize: '10px', fontWeight: '800', color: 'white', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Layers size={12} style={{ color: '#60a5fa' }} />
-                  <span>{prop.type.split(' ')[1] || 'Portfolio'}</span>
-                </div>
+                    <div style={{ position: 'absolute', top: '12px', left: '12px', background: 'rgba(15, 23, 42, 0.7)', padding: '4px 10px', borderRadius: '12px', fontSize: '10px', fontWeight: '800', color: 'white', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Layers size={12} style={{ color: '#93c5fd' }} />
+                      <span>{prop.type.split(' ')[1] || 'Portfolio'}</span>
+                    </div>
 
-                {/* Bottom Title on Image - Compact */}
-                <div style={{ position: 'absolute', bottom: '12px', left: '16px', right: '16px', color: 'white' }}>
-                  <h3 style={{ fontSize: '20px', fontWeight: '900', margin: '0 0 2px', textShadow: '0 2px 8px rgba(0,0,0,0.5)', lineHeight: '1.2' }}>{prop.name}</h3>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#cbd5e1' }}>
-                    <MapPin size={13} style={{ color: '#60a5fa' }} />
-                    <span style={{ fontSize: '13px', fontWeight: '700' }}>{prop.location}</span>
+                    {/* Bottom Title on Banner */}
+                    <div style={{ position: 'absolute', bottom: '12px', left: '16px', right: '16px', color: 'white' }}>
+                      <h3 style={{ fontSize: '20px', fontWeight: '900', margin: '0 0 2px', textShadow: '0 2px 8px rgba(0,0,0,0.5)', lineHeight: '1.2' }}>{prop.name}</h3>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#e2e8f0' }}>
+                        <MapPin size={13} style={{ color: '#93c5fd' }} />
+                        <span style={{ fontSize: '13px', fontWeight: '700' }}>{prop.location}</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
+                );
+              })()}
 
               {/* Card Body Specs & Assigned Rental Units Preview - Compact */}
               <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '16px' }}>
@@ -549,13 +574,7 @@ const RentalProperties = () => {
                 </button>
               </div>
 
-              {/* STORAGE OPTIMIZATION NOTICE */}
-              <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', padding: '16px 20px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '14px', fontSize: '13px', color: '#1e3a8a', fontWeight: '800', marginBottom: '28px' }}>
-                <Server size={24} style={{ flexShrink: 0, color: '#2563eb' }} />
-                <span>
-                  💡 <strong>Supabase Storage Quota Optimization Active:</strong> Custom image URL and file uploads are disabled to save cloud space. The system automatically scans the property name and classification (Shop, Store, Apartment, Villa, Office) and attaches premium high-resolution themed architectural artwork.
-                </span>
-              </div>
+
               
               <form onSubmit={handleAddPropertySubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 <div>

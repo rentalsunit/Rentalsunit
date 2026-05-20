@@ -1,112 +1,34 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Folder, FileText, Download, Eye, Trash2, Plus, Search, Filter, 
   CheckCircle2, AlertCircle, ShieldCheck, HardHat, FileCode, Archive, 
   UploadCloud, FileSpreadsheet, Lock, X, RefreshCw, Key
 } from 'lucide-react';
+import { getStoredVaultDocuments, saveStoredVaultDocuments } from '../lib/masterData';
 
 const Documents = () => {
-  const [documents, setDocuments] = useState([
-    {
-      id: 'DOC-101',
-      name: 'Master_Lease_Agreement_Unit_302.pdf',
-      category: 'Contracts & Leases',
-      property: 'Sunset Luxury Apartments',
-      unit: 'Unit 302',
-      type: 'PDF',
-      size: '3.4 MB',
-      uploadedBy: 'Sarah Miller',
-      date: '15 May 2026',
-      security: 'Classified (Level 2)',
-      status: 'Verified Legal Doc',
-      summary: 'Standard 12-month residential tenancy agreement signed by Kwame Mensah. Includes security deposit escrow clauses.'
-    },
-    {
-      id: 'DOC-102',
-      name: 'Architectural_Floor_Plans_Tower_B.pdf',
-      category: 'Blueprints & Schematics',
-      property: 'The Apex Commercial Tower',
-      unit: 'All Floors',
-      type: 'PDF',
-      size: '28.5 MB',
-      uploadedBy: 'Michael K.',
-      date: '12 May 2026',
-      security: 'Restricted (Level 3)',
-      status: 'Verified Blueprint',
-      summary: 'High-resolution CAD exported vector blueprints including load-bearing pillar coordinates and fire evacuation routes.'
-    },
-    {
-      id: 'DOC-103',
-      name: 'Municipal_Fire_Safety_Certificate_2026.pdf',
-      category: 'Permits & Certificates',
-      property: 'The Apex Commercial Tower',
-      unit: 'General Facility',
-      type: 'PDF',
-      size: '1.8 MB',
-      uploadedBy: 'David Wilson',
-      date: '10 May 2026',
-      security: 'Public Audit (Level 1)',
-      status: 'Verified Certificate',
-      summary: 'Official municipal safety clearance certificate valid through December 2026 following fire suppression system overhaul.'
-    },
-    {
-      id: 'DOC-104',
-      name: 'Plot_12_Title_Deed_Transfer_Registry.pdf',
-      category: 'Deeds & Ownership',
-      property: 'Green Valley Estate',
-      unit: 'Plot 12',
-      type: 'PDF',
-      size: '4.2 MB',
-      uploadedBy: 'Louis Kemenyo',
-      date: '08 May 2026',
-      security: 'Highly Confidential (Level 4)',
-      status: 'Verified Title',
-      summary: 'Original stamped Land Commission title transfer deed for Dr. Evelyn Addo. Registered in central land registry archives.'
-    },
-    {
-      id: 'DOC-105',
-      name: 'HVAC_Annual_Maintenance_Contract.docx',
-      category: 'Vendor Agreements',
-      property: 'Sunset Luxury Apartments',
-      unit: 'Portfolio-wide',
-      type: 'DOCX',
-      size: '1.1 MB',
-      uploadedBy: 'Michael K.',
-      date: '04 May 2026',
-      security: 'Classified (Level 2)',
-      status: 'Active Agreement',
-      summary: 'CoolTech Engineers SLA covering bi-monthly filter replacements, compressor inspections, and 24/7 emergency dispatch.'
-    },
-    {
-      id: 'DOC-106',
-      name: 'Q1_Portfolio_Tax_Assessment_Return.xlsx',
-      category: 'Financial Records',
-      property: 'Portfolio General HQ',
-      unit: 'Corporate Accounting',
-      type: 'XLSX',
-      size: '6.8 MB',
-      uploadedBy: 'Sarah Osei',
-      date: '02 May 2026',
-      security: 'Confidential (Level 3)',
-      status: 'Audited & Filed',
-      summary: 'Consolidated commercial property tax reconciliation and depreciation schedules submitted to Ghana Revenue Authority.'
-    },
-    {
-      id: 'DOC-107',
-      name: 'Villa_4_Move_In_Inspection_Photos.zip',
-      category: 'Media & Inspections',
-      property: 'Palm Breeze Residences',
-      unit: 'Luxury Villa 4',
-      type: 'ZIP',
-      size: '84.2 MB',
-      uploadedBy: 'David Wilson',
-      date: '28 Apr 2026',
-      security: 'Standard (Level 1)',
-      status: 'Inspection Archive',
-      summary: 'Contains 45 high-resolution timestamped photographs documenting immaculate move-in condition of flooring, fixtures, and appliances.'
-    }
-  ]);
+  const [documents, setDocuments] = useState(() => {
+    return getStoredVaultDocuments();
+  });
+
+  // Sync state when coming back from other modules or periodically
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setDocuments(getStoredVaultDocuments());
+    };
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('realtyos_docs_update', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('realtyos_docs_update', handleStorageChange);
+    };
+  }, []);
+
+  const saveDocuments = (updated) => {
+    setDocuments(updated);
+    saveStoredVaultDocuments(updated);
+  };
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
@@ -116,7 +38,8 @@ const Documents = () => {
 
   const handleDelete = (id, name) => {
     if (window.confirm(`Are you certain you wish to archive document: ${name}?`)) {
-      setDocuments(documents.filter(d => d.id !== id));
+      const updated = documents.filter(d => d.id !== id);
+      saveDocuments(updated);
       setSuccessMsg(`Document ${name} has been securely archived.`);
       setTimeout(() => setSuccessMsg(''), 4000);
     }
@@ -143,7 +66,8 @@ const Documents = () => {
       summary: formData.get('summary') || 'No document summary provided.'
     };
 
-    setDocuments([newDoc, ...documents]);
+    const updated = [newDoc, ...documents];
+    saveDocuments(updated);
     setShowAddModal(false);
     setSuccessMsg(`Successfully uploaded encrypted document ${newDoc.name} to vault!`);
     setTimeout(() => setSuccessMsg(''), 4000);

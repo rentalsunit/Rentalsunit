@@ -5,6 +5,7 @@ import {
   Search, Bell, ChevronDown, X, Upload, User, Mail, Phone, ShieldCheck, 
   Check, CheckCircle2, Clock, AlertTriangle, ShieldAlert, Filter, Trash2, Camera, Briefcase, Building2, LogOut, Lock
 } from 'lucide-react';
+import { getStoredNotifications, saveStoredNotifications } from '../lib/masterData';
 
 
 const Header = ({ activeCategory, activeTab, setActiveTab }) => {
@@ -160,25 +161,14 @@ const Header = ({ activeCategory, activeTab, setActiveTab }) => {
   // --- Notifications Modal & LocalStorage State ---
   const [showNotifModal, setShowNotifModal] = useState(false);
   const [notifFilter, setNotifFilter] = useState('all'); // 'all' or 'unread'
-  const [notifications, setNotifications] = useState(() => {
-    const saved = localStorage.getItem('realtyos_notifications');
-    if (saved) {
-      try { return JSON.parse(saved); } catch(e) {}
-    }
-    return [
-      { id: 'n1', title: 'Critical Lease Expiration', desc: 'Penthouse 305-C lease for Sophia Mensah-Osei expires in 14 days.', type: 'alert', time: '10m ago', unread: true },
-      { id: 'n2', title: 'Urgent Maintenance Ticket', desc: 'Main Water Line Burst logged at Sunset Luxury Apartments (Unit 104).', type: 'urgent', time: '1h ago', unread: true },
-      { id: 'n3', title: 'Rent Payment Received', desc: '₵ 12,500 received from Kwame Mensah (6 Months Advance).', type: 'success', time: '3h ago', unread: true },
-      { id: 'n4', title: 'System Cloud Audit Complete', desc: 'Automated daily cloud portfolio ledger snapshot archived successfully.', type: 'info', time: '1d ago', unread: false },
-    ];
-  });
+  const [notifications, setNotifications] = useState(() => getStoredNotifications());
 
   const unreadCount = notifications.filter(n => n.unread).length;
 
   const markAllAsRead = () => {
     const updated = notifications.map(n => ({ ...n, unread: false }));
     setNotifications(updated);
-    localStorage.setItem('realtyos_notifications', JSON.stringify(updated));
+    saveStoredNotifications(updated);
     setSuccessMsg('All notifications marked as read.');
     setTimeout(() => setSuccessMsg(''), 3000);
   };
@@ -186,7 +176,7 @@ const Header = ({ activeCategory, activeTab, setActiveTab }) => {
   const dismissNotif = (id) => {
     const updated = notifications.filter(n => n.id !== id);
     setNotifications(updated);
-    localStorage.setItem('realtyos_notifications', JSON.stringify(updated));
+    saveStoredNotifications(updated);
   };
 
   const filteredNotifs = notifications.filter(n => notifFilter === 'all' || n.unread);
@@ -496,12 +486,6 @@ const Header = ({ activeCategory, activeTab, setActiveTab }) => {
 
                   {/* Edit Form Fields */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderLeft: '4px solid #6366f1', padding: '16px 20px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '14px', fontSize: '13px', color: '#334155', fontWeight: '600', lineHeight: '1.5' }}>
-                      <Lock size={20} color="#6366f1" style={{ flexShrink: 0 }} />
-                      <span>
-                        <strong>HR Controlled Records:</strong> Your legal name, executive title, and department are officially assigned during employment onboarding. Modifications can only be committed by authorized HR personnel via the Staff Directory.
-                      </span>
-                    </div>
 
                     <div style={{ display: 'flex', gap: '16px' }}>
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
