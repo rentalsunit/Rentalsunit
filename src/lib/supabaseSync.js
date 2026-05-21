@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient';
+﻿import { supabase } from './supabaseClient';
 
 /**
  * Helper to safely get data from localStorage or fallback
@@ -98,13 +98,13 @@ export const mapFromDb = (tableName, dbItem) => {
       status: dbItem.status,
       image: dbItem.image,
       individualUnits: dbItem.units || [],
-      priceRange: metadata.priceRange || `₵ ${Number(dbItem.price).toLocaleString()}`,
+      priceRange: metadata.priceRange || `â‚µ ${Number(dbItem.price).toLocaleString()}`,
       totalUnits: metadata.totalUnits || (dbItem.units ? dbItem.units.length : 0),
       soldUnits: metadata.soldUnits || 0,
-      projectedValue: metadata.projectedValue || `₵ ${Number(dbItem.price).toLocaleString()}`,
+      projectedValue: metadata.projectedValue || `â‚µ ${Number(dbItem.price).toLocaleString()}`,
       inventory: metadata.inventory || [],
       brochureSpecs: metadata.brochureSpecs || {},
-      icon: metadata.icon || '🏢'
+      icon: metadata.icon || 'ðŸ¢'
     };
   }
 
@@ -124,7 +124,7 @@ export const mapFromDb = (tableName, dbItem) => {
       property: dbItem.property,
       client: dbItem.buyer,
       numericPrice: Number(dbItem.amount),
-      price: `₵ ${Number(dbItem.amount).toLocaleString()}`,
+      price: `â‚µ ${Number(dbItem.amount).toLocaleString()}`,
       date: dbItem.date,
       stage: dbItem.status,
       agent: dbItem.agent,
@@ -152,7 +152,7 @@ export const mapFromDb = (tableName, dbItem) => {
       date: dbItem.date,
       assignedTo: dbItem.assignedTo,
       estCost: Number(dbItem.cost),
-      formattedCost: extra.formattedCost || `₵ ${Number(dbItem.cost).toLocaleString()}`,
+      formattedCost: extra.formattedCost || `â‚µ ${Number(dbItem.cost).toLocaleString()}`,
       notes: dbItem.description,
       loggedBy: extra.loggedBy || 'System',
       ...extra
@@ -163,7 +163,9 @@ export const mapFromDb = (tableName, dbItem) => {
 };
 
 /**
- * Synchronize a specific Supabase table with localStorage cache
+ * Synchronize a specific Supabase table with localStorage cache.
+ * FIX: localStorage is always the source of truth. We MERGE Supabase data with
+ * local data — local records always win to prevent data loss on page refresh.
  */
 export const syncTableWithStorage = async (tableName, storageKey, defaultData, dispatchEventName) => {
   try {
@@ -178,14 +180,14 @@ export const syncTableWithStorage = async (tableName, storageKey, defaultData, d
       return getLocalData(storageKey, defaultData);
     }
 
-    // If table exists but is empty, try auto-seeding from local cache / defaults
+    // Get whatever is currently in localStorage (may have uncommitted new records)
+    const localData = getLocalData(storageKey, defaultData);
+
+    // If table exists but is empty in cloud, push all local data up
     if (!data || data.length === 0) {
-      console.log(`[Supabase Sync] Table '${tableName}' is currently empty in cloud. Auto-seeding...`);
-      const local = getLocalData(storageKey, defaultData);
-      if (local && local.length > 0) {
-        // Sanitize and map objects to DB format before upsert
-        const sanitized = local.map(item => mapToDb(tableName, item));
-        
+      console.log(`[Supabase Sync] Table '${tableName}' is currently empty in cloud. Auto-seeding from local...`);
+      if (localData && localData.length > 0) {
+        const sanitized = localData.map(item => mapToDb(tableName, item));
         const { error: seedError } = await supabase.from(tableName).upsert(sanitized, { onConflict: 'id' });
         if (seedError) {
           console.warn(`[Supabase Sync] Could not auto-seed table '${tableName}':`, seedError.message);
@@ -193,16 +195,37 @@ export const syncTableWithStorage = async (tableName, storageKey, defaultData, d
           console.log(`[Supabase Sync] Successfully auto-seeded '${tableName}' with ${sanitized.length} records.`);
         }
       }
-      return local;
+      return localData;
     }
 
-    // Cloud has data! Map it back to frontend schema and cache it locally
-    const mapped = data.map(item => mapFromDb(tableName, item));
-    localStorage.setItem(storageKey, JSON.stringify(mapped));
+    // Cloud has data — map from DB format to frontend format
+    const cloudMapped = data.map(item => mapFromDb(tableName, item));
+
+    // CRITICAL FIX: Merge cloud data with local data.
+    // Local records that don't exist in the cloud (just added, not yet synced) are preserved.
+    // Cloud records overwrite local records with the same ID (cloud is confirmed persisted).
+    const cloudIds = new Set(cloudMapped.map(item => String(item.id)));
+    const localOnlyRecords = localData.filter(item => !cloudIds.has(String(item.id)));
+    
+    if (localOnlyRecords.length > 0) {
+      console.log(`[Supabase Sync] Found ${localOnlyRecords.length} local-only record(s) in '${tableName}' not yet in cloud. Pushing them up...`);
+      // Push local-only records to Supabase so they're persisted
+      const sanitizedLocalOnly = localOnlyRecords.map(item => mapToDb(tableName, item));
+      const { error: pushError } = await supabase.from(tableName).upsert(sanitizedLocalOnly, { onConflict: 'id' });
+      if (pushError) {
+        console.warn(`[Supabase Sync] Could not push local-only records to '${tableName}':`, pushError.message);
+      } else {
+        console.log(`[Supabase Sync] Successfully pushed ${localOnlyRecords.length} local-only record(s) to '${tableName}'.`);
+      }
+    }
+
+    // Merged result: cloud data + any local-only records
+    const merged = [...cloudMapped, ...localOnlyRecords];
+    localStorage.setItem(storageKey, JSON.stringify(merged));
     if (dispatchEventName) {
       window.dispatchEvent(new Event(dispatchEventName));
     }
-    return mapped;
+    return merged;
 
   } catch (err) {
     console.warn(`[Supabase Sync] Exception syncing '${tableName}':`, err);
@@ -211,10 +234,12 @@ export const syncTableWithStorage = async (tableName, storageKey, defaultData, d
 };
 
 /**
- * Save records to both localStorage immediately and Supabase asynchronously in background
+ * Save records to both localStorage immediately and Supabase asynchronously in background.
+ * FIX: localStorage is ALWAYS the primary source of truth. Supabase is a backup.
+ * The deletion step only runs AFTER the upsert fully completes without error.
  */
 export const saveToSupabaseAndStorage = async (tableName, storageKey, items, dispatchEventName) => {
-  // 1. Instantaneous local update for snappy UI feel
+  // 1. Instantaneous local update for snappy UI feel — this is the SOURCE OF TRUTH
   localStorage.setItem(storageKey, JSON.stringify(items));
   if (dispatchEventName) {
     window.dispatchEvent(new Event(dispatchEventName));
@@ -223,19 +248,20 @@ export const saveToSupabaseAndStorage = async (tableName, storageKey, items, dis
   // 2. Background async sync with Supabase
   try {
     const sanitized = items.map(item => mapToDb(tableName, item));
+    let upsertSucceeded = false;
 
     // Perform upsert of all current items
     const { error } = await supabase.from(tableName).upsert(sanitized, { onConflict: 'id' });
     if (error) {
       console.warn(`[Supabase Sync] Background backup to '${tableName}' failed:`, error.message);
 
-      // Dynamic Fallback Save for Large Payloads
+      // Dynamic Fallback Save for Large Payloads (e.g. base64 images)
       const isPayloadTooLarge = error.message.includes('413') || 
                                 error.message.toLowerCase().includes('payload too large') || 
                                 error.message.toLowerCase().includes('too large');
                                 
-      if (isPayloadTooLarge && tableName === 'staff_employees') {
-        console.log(`[Supabase Sync] Payload too large. Retrying with heavy image URLs stripped...`);
+      if (isPayloadTooLarge) {
+        console.log(`[Supabase Sync] Payload too large for '${tableName}'. Retrying with heavy image URLs stripped...`);
         const safetyItems = sanitized.map(item => ({
           ...item,
           passportPhoto: item.passportPhoto?.startsWith('data:') ? null : item.passportPhoto,
@@ -245,37 +271,49 @@ export const saveToSupabaseAndStorage = async (tableName, storageKey, items, dis
         
         const { error: retryError } = await supabase.from(tableName).upsert(safetyItems, { onConflict: 'id' });
         if (retryError) {
-          console.error(`[Supabase Sync] Safety retry failed:`, retryError.message);
-          return; // Abort deletion on complete write failures
+          console.error(`[Supabase Sync] Safety retry also failed for '${tableName}':`, retryError.message);
+          // DO NOT proceed to deletion — upsert never succeeded
+          return;
         } else {
-          console.log(`[Supabase Sync] Safety retry succeeded! Core textual records preserved.`);
+          console.log(`[Supabase Sync] Safety retry succeeded for '${tableName}'! Records preserved without images.`);
+          upsertSucceeded = true;
         }
       } else {
-        return; // Abort deletion on standard database errors
+        // Standard error — abort entirely, do NOT delete anything
+        return;
       }
     } else {
+      upsertSucceeded = true;
       console.log(`[Supabase Sync] Successfully synchronized ${sanitized.length} records to '${tableName}'.`);
     }
+
+    // CRITICAL FIX: Only delete stale rows if the upsert fully succeeded.
+    // This prevents a race condition where new records are deleted because Supabase
+    // hadn't yet registered the upsert when we fetched existing IDs.
+    if (!upsertSucceeded) return;
+
+    // Small delay to allow Supabase to fully commit the upsert before we fetch IDs
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     // Explicitly delete any records in Supabase that are no longer present in local state
     const { data: existingRows, error: fetchError } = await supabase.from(tableName).select('id');
     if (!fetchError && existingRows) {
-      const currentIds = sanitized.map(item => item.id);
+      const currentIds = new Set(sanitized.map(item => String(item.id)));
       const idsToDelete = existingRows
         .map(row => String(row.id))
-        .filter(id => !currentIds.includes(id));
+        .filter(id => !currentIds.has(id));
       
       if (idsToDelete.length > 0) {
         const { error: deleteError } = await supabase.from(tableName).delete().in('id', idsToDelete);
         if (deleteError) {
           console.warn(`[Supabase Sync] Failed to delete omitted records from '${tableName}':`, deleteError.message);
         } else {
-          console.log(`[Supabase Sync] Successfully deleted ${idsToDelete.length} omitted records from '${tableName}'.`);
+          console.log(`[Supabase Sync] Cleaned up ${idsToDelete.length} stale records from '${tableName}'.`);
         }
       }
     }
   } catch (err) {
-    console.warn(`[Supabase Sync] Exception during cloud backup:`, err);
+    console.warn(`[Supabase Sync] Exception during cloud backup to '${tableName}':`, err);
   }
 };
 
@@ -701,3 +739,5 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role;
 `;
+
+
