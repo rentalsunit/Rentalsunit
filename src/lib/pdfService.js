@@ -1,4 +1,4 @@
-import { jsPDF } from 'jspdf';
+﻿import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 
 /**
@@ -67,55 +67,63 @@ export async function generateRealPDF(targetSelector, filename = 'Document.pdf',
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
     const imgProps = pdf.getImageProperties(imgData);
-    
+
     // Calculate margins to give it a clean document feel
     const margin = options.margin !== undefined ? options.margin : 10;
     const contentWidth = pdfWidth - (margin * 2);
-    
-    const imgHeight = (imgProps.height * contentWidth) / imgProps.width;
-
-    let heightLeft = imgHeight;
-    let position = margin;
+    const contentHeight = pdfHeight - (margin * 2);
 
     // Add running header/footer overlay to make it look official
     const addHeaderFooter = (pageNum, totalPages) => {
-       pdf.setFillColor(0, 135, 90); // System Primary Green #00875a
+       pdf.setFillColor(0, 135, 90);
        pdf.rect(0, 0, pdfWidth, 6, 'F');
-       
-       pdf.setFillColor(15, 23, 42); // Slate 900
+       pdf.setFillColor(15, 23, 42);
        pdf.rect(0, pdfHeight - 12, pdfWidth, 12, 'F');
-       
        pdf.setFont('helvetica', 'bold');
        pdf.setFontSize(8);
        pdf.setTextColor(255, 255, 255);
        const cleanDocTitle = filename.replace('.pdf', '').replace(/_/g, ' ').toUpperCase();
        const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-       pdf.text(`REALTYOS CLUSTER • ${cleanDocTitle} (${dateStr})`, 10, pdfHeight - 4);
-       pdf.text(`PAGE ${pageNum} OF ${totalPages}`, pdfWidth - 30, pdfHeight - 4);
+       pdf.text('REALTYOS - ' + cleanDocTitle + ' (' + dateStr + ')', 10, pdfHeight - 4);
+       pdf.text('PAGE ' + pageNum + ' OF ' + totalPages, pdfWidth - 30, pdfHeight - 4);
     };
 
-    // Calculate total pages
-    const totalPages = Math.max(1, Math.ceil(imgHeight / (pdfHeight - (margin * 2))));
+    // SINGLE-PAGE MODE: scales all content to fit onto exactly one A4 page.
+    // Use this for receipts, vouchers, confirmations - no paper waste.
+    if (options.singlePage) {
+      const scaleW = contentWidth / imgProps.width;
+      const scaleH = contentHeight / imgProps.height;
+      const fitScale = Math.min(scaleW, scaleH);
+      const fittedW = imgProps.width * fitScale;
+      const fittedH = imgProps.height * fitScale;
+      const xOffset = margin + (contentWidth - fittedW) / 2;
+      const yOffset = margin + (contentHeight - fittedH) / 2;
+      pdf.addImage(imgData, 'JPEG', xOffset, yOffset, fittedW, fittedH);
+      addHeaderFooter(1, 1);
+      pdf.save(filename);
+      return true;
+    }
 
-    // First page
+    const imgHeight = (imgProps.height * contentWidth) / imgProps.width;
+    let heightLeft = imgHeight;
+    let position = margin;
+
+    const totalPages = Math.max(1, Math.ceil(imgHeight / contentHeight));
+
     pdf.addImage(imgData, 'JPEG', margin, position, contentWidth, imgHeight);
     addHeaderFooter(1, totalPages);
-    heightLeft -= (pdfHeight - (margin * 2));
+    heightLeft -= contentHeight;
 
     let pageNumber = 2;
-    // Additional pages for long documents (simulating scrolling pagination)
-    while (heightLeft > 0 && pageNumber <= 15) { // safety limit to prevent infinite loops
-      position = heightLeft - imgHeight + margin; // Shift image up mathematically
+    while (heightLeft > 0 && pageNumber <= 15) {
+      position = heightLeft - imgHeight + margin;
       pdf.addPage();
       pdf.addImage(imgData, 'JPEG', margin, position, contentWidth, imgHeight);
-      
-      // Blank out the top and bottom margins so the shifted image doesn't overlap header/footer bounds
       pdf.setFillColor(255, 255, 255);
-      pdf.rect(0, 0, pdfWidth, margin, 'F'); // cover top
-      pdf.rect(0, pdfHeight - margin, pdfWidth, margin, 'F'); // cover bottom
-      
+      pdf.rect(0, 0, pdfWidth, margin, 'F');
+      pdf.rect(0, pdfHeight - margin, pdfWidth, margin, 'F');
       addHeaderFooter(pageNumber, totalPages);
-      heightLeft -= (pdfHeight - (margin * 2));
+      heightLeft -= contentHeight;
       pageNumber++;
     }
 

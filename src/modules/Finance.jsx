@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+﻿import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   CreditCard, Wallet, DollarSign, TrendingUp, TrendingDown, Clock, 
@@ -44,7 +44,7 @@ const Finance = () => {
 
   const handleExportPdf = async () => {
     setIsGeneratingPdf(true);
-    await generateRealPDF('.voucher-print-area', `Audit_Voucher_${selectedVoucher?.id ? selectedVoucher.id : 'TRX'}.pdf`, { orientation: 'p' });
+    await generateRealPDF('.voucher-print-area', `Audit_Voucher_${selectedVoucher?.id ? selectedVoucher.id : 'TRX'}.pdf`, { orientation: 'p', singlePage: true, scale: 2 });
     setIsGeneratingPdf(false);
   };
 
@@ -80,7 +80,7 @@ const Finance = () => {
     e.preventDefault();
     const formData = new FormData(e.target);
     const numAmount = parseFloat(formData.get('amount')) || 0;
-    const formattedAmount = `₵ ${numAmount.toLocaleString()}`;
+    const formattedAmount = `â‚µ ${numAmount.toLocaleString()}`;
 
     let generatedCategory = '';
     let generatedPayerRecipient = '';
@@ -309,7 +309,7 @@ const Finance = () => {
           <div>
             <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Net Portfolio Cash Flow</p>
             <h3 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-main)', marginTop: '4px' }}>
-              ₵ {(metrics.netCashFlow / 1000).toLocaleString()}k
+              â‚µ {(metrics.netCashFlow / 1000).toLocaleString()}k
             </h3>
             <span style={{ fontSize: '12px', color: '#10b981', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px' }}>
               <TrendingUp size={14} /> Reconciled surplus
@@ -337,7 +337,7 @@ const Finance = () => {
           <div>
             <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Realized Outflow</p>
             <h3 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-main)', marginTop: '4px' }}>
-              ₵ {(metrics.totalExpense / 1000).toLocaleString()}k
+              â‚µ {(metrics.totalExpense / 1000).toLocaleString()}k
             </h3>
             <span style={{ fontSize: '12px', color: '#ef4444', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px' }}>
               <TrendingDown size={14} /> Operations & payroll
@@ -352,7 +352,7 @@ const Finance = () => {
           <div>
             <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Rent & Sales Receipts</p>
             <h3 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-main)', marginTop: '4px' }}>
-              ₵ {((metrics.rentRevenue + metrics.salesRevenue) / 1000).toLocaleString()}k
+              â‚µ {((metrics.rentRevenue + metrics.salesRevenue) / 1000).toLocaleString()}k
             </h3>
             <span style={{ fontSize: '12px', color: '#4338ca', fontWeight: '700' }}>Combined gross collections</span>
           </div>
@@ -434,7 +434,7 @@ const Finance = () => {
               <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Voucher Ref & Date</th>
               <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Source / Property</th>
               <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Category & Recipient</th>
-              <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Amount (₵)</th>
+              <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Amount (â‚µ)</th>
               <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Status</th>
               <th style={{ padding: '18px 24px', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'right' }}>Audit / Actions</th>
             </tr>
@@ -779,7 +779,7 @@ const Finance = () => {
                 {/* ========================================== */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '4px' }}>
                   <div>
-                    <label style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Voucher Amount (₵)</label>
+                    <label style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Voucher Amount (â‚µ)</label>
                     <input name="amount" type="number" placeholder="12500" required style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-dark)', fontSize: '16px', fontWeight: '800', background: '#f8fafc', color: 'var(--primary)' }} />
                   </div>
                   <div>
@@ -827,86 +827,79 @@ const Finance = () => {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              style={{ background: 'white', padding: '40px', borderRadius: '28px', width: '640px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', boxSizing: 'border-box' }}
+              style={{ background: 'white', padding: '28px 32px', borderRadius: '24px', width: '600px', maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', boxSizing: 'border-box' }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', borderBottom: '1px solid var(--border-dark)', paddingBottom: '20px' }}>
+              {/* Header Row */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px', borderBottom: '2px solid var(--border-dark)', paddingBottom: '14px' }}>
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                    <span style={{ padding: '4px 10px', borderRadius: '20px', backgroundColor: selectedVoucher.type === 'Income' ? '#ecfdf5' : '#fef2f2', color: selectedVoucher.type === 'Income' ? '#10b981' : '#ef4444', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Receipt size={12} /> Official Accounting Voucher
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                    <span style={{ padding: '3px 10px', borderRadius: '20px', backgroundColor: selectedVoucher.type === 'Income' ? '#ecfdf5' : '#fef2f2', color: selectedVoucher.type === 'Income' ? '#10b981' : '#ef4444', fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Receipt size={11} /> Official Accounting Voucher
                     </span>
-                    <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)' }}>• {selectedVoucher.id}</span>
+                    <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)' }}>#{selectedVoucher.id}</span>
                   </div>
-                  <h3 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-main)' }}>{selectedVoucher.category}</h3>
-                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '600', marginTop: '4px' }}>{selectedVoucher.property} • Posted by {selectedVoucher.officer}</p>
+                  <h3 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-main)', margin: '0 0 2px' }}>{selectedVoucher.category}</h3>
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600', margin: 0 }}>{selectedVoucher.property} · Posted by {selectedVoucher.officer}</p>
                 </div>
-                <button className="no-print" onClick={() => setShowVoucherModal(false)} style={{ background: '#f1f5f9', border: 'none', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                  <X size={20} />
+                <button className="no-print" onClick={() => setShowVoucherModal(false)} style={{ background: '#f1f5f9', border: 'none', width: '34px', height: '34px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', cursor: 'pointer', flexShrink: 0 }}>
+                  <X size={18} />
                 </button>
               </div>
 
               {/* Amount Banner */}
-              <div style={{ padding: '24px', background: selectedVoucher.type === 'Income' ? '#f0fdf4' : '#fef2f2', border: selectedVoucher.type === 'Income' ? '1px solid #10b98130' : '1px solid #ef444430', borderRadius: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
+              <div style={{ padding: '16px 20px', background: selectedVoucher.type === 'Income' ? '#f0fdf4' : '#fef2f2', border: selectedVoucher.type === 'Income' ? '1px solid #10b98130' : '1px solid #ef444430', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <div>
-                  <span style={{ fontSize: '12px', fontWeight: '800', color: selectedVoucher.type === 'Income' ? '#10b981' : '#ef4444', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Reconciled {selectedVoucher.type}</span>
-                  <h2 style={{ fontSize: '36px', fontWeight: '900', color: selectedVoucher.type === 'Income' ? '#10b981' : '#ef4444', marginTop: '4px' }}>
+                  <span style={{ fontSize: '10px', fontWeight: '800', color: selectedVoucher.type === 'Income' ? '#10b981' : '#ef4444', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '2px' }}>Total Reconciled {selectedVoucher.type}</span>
+                  <h2 style={{ fontSize: '30px', fontWeight: '900', color: selectedVoucher.type === 'Income' ? '#10b981' : '#ef4444', margin: 0 }}>
                     {selectedVoucher.type === 'Income' ? '+' : '-'}{selectedVoucher.formattedAmount}
                   </h2>
                 </div>
-                <span style={{ 
-                  padding: '8px 16px', 
-                  borderRadius: '20px', 
-                  fontSize: '13px', 
-                  fontWeight: '800',
-                  backgroundColor: selectedVoucher.status === 'Approved' ? '#10b981' : selectedVoucher.status === 'Pending' ? '#f59e0b' : '#ef4444',
-                  color: 'white',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
-                }}>
-                  {selectedVoucher.status === 'Approved' ? <CheckCircle2 size={16}/> : selectedVoucher.status === 'Pending' ? <Clock size={16}/> : <XCircle size={16}/>}
+                <span style={{ padding: '6px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: '800', backgroundColor: selectedVoucher.status === 'Approved' ? '#10b981' : selectedVoucher.status === 'Pending' ? '#f59e0b' : '#ef4444', color: 'white', display: 'flex', alignItems: 'center', gap: '5px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
+                  {selectedVoucher.status === 'Approved' ? <CheckCircle2 size={14}/> : selectedVoucher.status === 'Pending' ? <Clock size={14}/> : <XCircle size={14}/>}
                   {selectedVoucher.status}
                 </span>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '28px' }}>
-                <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '16px', border: '1px solid var(--border-dark)' }}>
-                  <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Payer / Recipient</span>
-                  <span style={{ fontSize: '15px', fontWeight: '800', color: 'var(--text-main)', display: 'block' }}>{selectedVoucher.payerRecipient}</span>
+              {/* Info Grid — 4 fields in 2x2 */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '14px' }}>
+                <div style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: '14px', border: '1px solid var(--border-dark)' }}>
+                  <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '3px' }}>Payer / Recipient</span>
+                  <span style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text-main)', display: 'block' }}>{selectedVoucher.payerRecipient}</span>
                 </div>
-                <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '16px', border: '1px solid var(--border-dark)' }}>
-                  <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Payment Method</span>
-                  <span style={{ fontSize: '15px', fontWeight: '800', color: 'var(--text-main)', display: 'block' }}>{selectedVoucher.paymentMethod}</span>
+                <div style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: '14px', border: '1px solid var(--border-dark)' }}>
+                  <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '3px' }}>Payment Method</span>
+                  <span style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text-main)', display: 'block' }}>{selectedVoucher.paymentMethod}</span>
                 </div>
-                <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '16px', border: '1px solid var(--border-dark)' }}>
-                  <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Transaction Ref Code</span>
-                  <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--primary)', fontFamily: 'monospace', display: 'block' }}>{selectedVoucher.refNo}</span>
+                <div style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: '14px', border: '1px solid var(--border-dark)' }}>
+                  <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '3px' }}>Transaction Ref Code</span>
+                  <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--primary)', fontFamily: 'monospace', display: 'block' }}>{selectedVoucher.refNo}</span>
                 </div>
-                <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '16px', border: '1px solid var(--border-dark)' }}>
-                  <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Posting Timestamp</span>
-                  <span style={{ fontSize: '15px', fontWeight: '800', color: 'var(--text-main)', display: 'block' }}>{selectedVoucher.date}</span>
+                <div style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: '14px', border: '1px solid var(--border-dark)' }}>
+                  <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '3px' }}>Posting Timestamp</span>
+                  <span style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text-main)', display: 'block' }}>{selectedVoucher.date}</span>
                 </div>
               </div>
 
-              <div style={{ padding: '20px', background: '#f8fafc', borderRadius: '20px', border: '1px solid var(--border-dark)', marginBottom: '32px' }}>
-                <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '8px' }}>Executive Audit Notes</span>
-                <p style={{ fontSize: '14px', color: 'var(--text-main)', fontWeight: '500', lineHeight: '1.6' }}>
-                  {selectedVoucher.notes}
+              {/* Audit Notes */}
+              <div style={{ padding: '14px 16px', background: '#f8fafc', borderRadius: '14px', border: '1px solid var(--border-dark)', marginBottom: '18px' }}>
+                <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Executive Audit Notes</span>
+                <p style={{ fontSize: '13px', color: 'var(--text-main)', fontWeight: '500', lineHeight: '1.55', margin: 0 }}>
+                  {selectedVoucher.notes || 'No additional notes recorded for this transaction.'}
                 </p>
               </div>
 
-              <div className="no-print" style={{ display: 'flex', gap: '16px' }}>
+              {/* Action Buttons */}
+              <div className="no-print" style={{ display: 'flex', gap: '12px' }}>
                 <button
                   disabled={isGeneratingPdf}
                   onClick={handleExportPdf}
-                  style={{ flex: 1, padding: '16px', borderRadius: '16px', border: '1px solid var(--border-dark)', background: '#f1f5f9', color: '#334155', fontWeight: '800', fontSize: '15px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: '0.2s', opacity: isGeneratingPdf ? 0.7 : 1 }}
+                  style={{ flex: 1, padding: '13px', borderRadius: '14px', border: '1px solid var(--border-dark)', background: '#f1f5f9', color: '#334155', fontWeight: '800', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: '0.2s', opacity: isGeneratingPdf ? 0.7 : 1 }}
                 >
-                  <FileText size={18} /> {isGeneratingPdf ? 'Generating Real PDF...' : 'Download Real PDF'}
+                  <FileText size={16} /> {isGeneratingPdf ? 'Generating PDF...' : 'Download PDF Receipt'}
                 </button>
                 <button
                   onClick={() => setShowVoucherModal(false)}
-                  style={{ flex: 1, padding: '16px', borderRadius: '16px', border: 'none', background: 'var(--primary)', color: 'white', fontWeight: '800', fontSize: '15px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: '0.2s', boxShadow: '0 10px 20px -5px rgba(0, 135, 90, 0.4)' }}
+                  style={{ flex: 1, padding: '13px', borderRadius: '14px', border: 'none', background: 'var(--primary)', color: 'white', fontWeight: '800', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: '0.2s', boxShadow: '0 8px 20px -5px rgba(0, 135, 90, 0.4)' }}
                 >
                   Done Inspecting
                 </button>
