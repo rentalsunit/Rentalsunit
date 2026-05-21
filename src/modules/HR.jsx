@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+﻿import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, UserPlus, Clock, ShieldCheck, DollarSign, Award, AlertTriangle,
@@ -268,7 +268,7 @@ const HR = () => {
           employeeId: emp.id,
           name: emp.name,
           dept: emp.dept,
-          status: '🏖️ Approved Leave',
+          status: 'ðŸ–ï¸ Approved Leave',
           clockIn: '--:-- --',
           clockOut: '--:-- --',
           location: 'On Approved Leave',
@@ -280,7 +280,7 @@ const HR = () => {
         employeeId: emp.id,
         name: emp.name,
         dept: emp.dept,
-        status: '🟢 Present (On Time)',
+        status: 'ðŸŸ¢ Present (On Time)',
         clockIn: '08:00 AM',
         clockOut: '05:00 PM',
         location: 'HQ Corporate Plaza',
@@ -296,10 +296,10 @@ const HR = () => {
     const updated = [...dailyCheckRoster];
     updated[index][field] = val;
     if (field === 'status') {
-      if (val === '🔴 Unexcused Absent') {
+      if (val === 'ðŸ”´ Unexcused Absent') {
         updated[index].clockIn = '--:-- --';
         updated[index].clockOut = '--:-- --';
-      } else if (val === '🟡 Present (Late)') {
+      } else if (val === 'ðŸŸ¡ Present (Late)') {
         updated[index].clockIn = '08:45 AM';
       }
     }
@@ -333,10 +333,10 @@ const HR = () => {
       let a = emp.daysAbsent;
       let lv = emp.daysOnLeave;
 
-      if (recordedItem.status === '🟢 Present (On Time)') p += 1;
-      else if (recordedItem.status === '🟡 Present (Late)') { p += 1; l += 1; }
-      else if (recordedItem.status === '🔴 Unexcused Absent') a += 1;
-      else if (recordedItem.status === '🏖️ Approved Leave') lv += 1;
+      if (recordedItem.status === 'ðŸŸ¢ Present (On Time)') p += 1;
+      else if (recordedItem.status === 'ðŸŸ¡ Present (Late)') { p += 1; l += 1; }
+      else if (recordedItem.status === 'ðŸ”´ Unexcused Absent') a += 1;
+      else if (recordedItem.status === 'ðŸ–ï¸ Approved Leave') lv += 1;
 
       const totalDays = p + a + lv;
       const rate = totalDays > 0 ? Math.round(((p + lv) / totalDays) * 100) + '%' : '100%';
@@ -396,7 +396,7 @@ const HR = () => {
       email: formData.get('email'),
       phone: formData.get('phone'),
       salary: numSalary,
-      formattedSalary: `₵ ${numSalary.toLocaleString()} / mo`,
+      formattedSalary: `â‚µ ${numSalary.toLocaleString()} / mo`,
       contract: formData.get('contract'),
       status: 'Active',
       joined: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
@@ -456,11 +456,11 @@ const HR = () => {
       monthYear: monthYear,
       totalStaff: staffList.filter(emp => emp.dept !== 'Executive Management' && emp.role !== 'Portfolio Director').length,
       grossAmount: calculatedTotalGross,
-      formattedGross: `₵ ${calculatedTotalGross.toLocaleString()}`,
+      formattedGross: `â‚µ ${calculatedTotalGross.toLocaleString()}`,
       loanDeductions: activeLoanDeductionsTotal,
-      formattedDeductions: `-₵ ${activeLoanDeductionsTotal.toLocaleString()}`,
+      formattedDeductions: `-â‚µ ${activeLoanDeductionsTotal.toLocaleString()}`,
       netAmount: calculatedNetDisbursement,
-      formattedNet: `₵ ${calculatedNetDisbursement.toLocaleString()}`,
+      formattedNet: `â‚µ ${calculatedNetDisbursement.toLocaleString()}`,
       status: 'Pending Finance Sign-off',
       runDate: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
       runBy: 'Finance Director'
@@ -470,7 +470,7 @@ const HR = () => {
     setPayrollRunsList(updatedPayroll);
     saveStoredStaffPayroll(updatedPayroll);
     setShowPayrollModal(false);
-    setSuccessMsg(`Payroll run for ${monthYear} calculated (Net: ₵${calculatedNetDisbursement.toLocaleString()}) and submitted to Finance for audit.`);
+    setSuccessMsg(`Payroll run for ${monthYear} calculated (Net: â‚µ${calculatedNetDisbursement.toLocaleString()}) and submitted to Finance for audit.`);
     setTimeout(() => setSuccessMsg(''), 4500);
   };
 
@@ -485,7 +485,7 @@ const HR = () => {
         return {
           ...loan,
           remainingBal: newBal,
-          formattedBal: `₵ ${newBal.toLocaleString()}`,
+          formattedBal: `â‚µ ${newBal.toLocaleString()}`,
           status: newBal === 0 ? 'Fully Repaid' : 'Active Amortization'
         };
       }
@@ -519,13 +519,13 @@ const HR = () => {
       id: `LN-${700 + loansList.length + 1}`,
       employee: formData.get('employee'),
       principal: principal,
-      formattedPrincipal: `₵ ${principal.toLocaleString()}`,
+      formattedPrincipal: `â‚µ ${principal.toLocaleString()}`,
       term: `${term} Months`,
       interestRate: `${interest}%`,
       monthlyInstallmentNum: monthlyInstallmentNum,
-      monthlyInstallment: `₵ ${monthlyInstallmentNum.toLocaleString()} / mo`,
+      monthlyInstallment: `â‚µ ${monthlyInstallmentNum.toLocaleString()} / mo`,
       remainingBal: principal,
-      formattedBal: `₵ ${principal.toLocaleString()}`,
+      formattedBal: `â‚µ ${principal.toLocaleString()}`,
       guarantor: formData.get('guarantor'),
       purpose: formData.get('purpose'),
       status: 'Pending Underwriting',
@@ -614,7 +614,7 @@ const HR = () => {
       email: editEmpEmail,
       phone: editEmpPhone,
       salary: parseFloat(editEmpSalary) || 0,
-      formattedSalary: `₵ ${parseFloat(editEmpSalary).toLocaleString()} / mo`,
+      formattedSalary: `â‚µ ${parseFloat(editEmpSalary).toLocaleString()} / mo`,
       bankName: editEmpBankName,
       bankAccNo: editEmpBankAccNo,
       bankAccName: editEmpName, // acc name matches name by default
@@ -637,7 +637,7 @@ const HR = () => {
     const userToTerminate = staffList.find(u => u.id === userId);
     if (!userToTerminate) return;
 
-    const confirmed = window.confirm(`⚠️ ARE YOU ABSOLUTELY SURE?\nThis will permanently delete/terminate employee record for "${userToTerminate.name}" (${userId}). This action cannot be undone and will immediately revoke all access.`);
+    const confirmed = window.confirm(`âš ï¸ ARE YOU ABSOLUTELY SURE?\nThis will permanently delete/terminate employee record for "${userToTerminate.name}" (${userId}). This action cannot be undone and will immediately revoke all access.`);
     if (!confirmed) return;
 
     const updatedList = staffList.filter(u => u.id !== userId);
@@ -804,7 +804,7 @@ const HR = () => {
           <div style={{ overflow: 'hidden' }}>
             <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>Gross Monthly Payroll</p>
             <h3 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-main)', marginTop: '4px' }}>
-              ₵ {(calculatedTotalGross / 1000).toFixed(1)}k <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-muted)' }}>/ mo</span>
+              â‚µ {(calculatedTotalGross / 1000).toFixed(1)}k <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-muted)' }}>/ mo</span>
             </h3>
             <span style={{ fontSize: '12px', color: '#4338ca', fontWeight: '700', whiteSpace: 'nowrap' }}>Dynamic gross calculation</span>
           </div>
@@ -817,7 +817,7 @@ const HR = () => {
           <div style={{ overflow: 'hidden' }}>
             <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>Amortized Staff Loans</p>
             <h3 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-main)', marginTop: '4px' }}>
-              ₵ {(metrics.outstandingLoans / 1000).toLocaleString()}k
+              â‚µ {(metrics.outstandingLoans / 1000).toLocaleString()}k
             </h3>
             <span style={{ fontSize: '12px', color: '#d97706', fontWeight: '700', whiteSpace: 'nowrap' }}>Medium & long term credit</span>
           </div>
@@ -841,13 +841,13 @@ const HR = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: 'white', padding: '12px 24px', borderRadius: '20px', border: '1px solid var(--border-dark)', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.03)', width: '100%' }}>
         <nav style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', width: '100%' }}>
           {[
-            { id: 'directory', label: '👨‍💼 Staff Registry & ID Badges' },
-            { id: 'attendance', label: '⏱️ Daily Attendance Logs' },
-            { id: 'leaves', label: '🏖️ Leave & Vacation Vault' },
-            { id: 'payroll', label: '💳 Monthly Payroll Run' },
-            { id: 'loans', label: '🏦 Staff Loans Ledger' },
-            { id: 'sanctions', label: '⚖️ Sanctions Registry' },
-            { id: 'appraisals', label: '⭐ Performance Appraisals' }
+            { id: 'directory', label: 'ðŸ‘¨â€ðŸ’¼ Staff Registry & ID Badges' },
+            { id: 'attendance', label: 'â±ï¸ Daily Attendance Logs' },
+            { id: 'leaves', label: 'ðŸ–ï¸ Leave & Vacation Vault' },
+            { id: 'payroll', label: 'ðŸ’³ Monthly Payroll Run' },
+            { id: 'loans', label: 'ðŸ¦ Staff Loans Ledger' },
+            { id: 'sanctions', label: 'âš–ï¸ Sanctions Registry' },
+            { id: 'appraisals', label: 'â­ Performance Appraisals' }
           ].map(tab => (
             <button
               key={tab.id}
@@ -909,90 +909,111 @@ const HR = () => {
               <motion.div
                 key={emp.id}
                 variants={itemVariants}
-                whileHover={{ y: -6, boxShadow: '0 25px 50px -12px rgba(0, 135, 90, 0.15)' }}
+                whileHover={{ y: -6, boxShadow: '0 28px 55px -12px rgba(0, 135, 90, 0.18)' }}
                 style={{
-                  background: 'linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(248,250,252,0.95) 100%)',
-                  borderRadius: '28px',
-                  border: '1px solid rgba(0, 135, 90, 0.18)',
-                  boxShadow: '0 15px 35px -10px rgba(0,0,0,0.08)',
+                  background: 'white',
+                  borderRadius: '24px',
+                  border: '1px solid rgba(0, 135, 90, 0.15)',
+                  boxShadow: '0 8px 28px -6px rgba(0,0,0,0.08)',
                   overflow: 'hidden',
                   display: 'flex',
                   flexDirection: 'column',
                   position: 'relative',
                   transition: 'all 0.3s ease',
-                  maxWidth: '380px',
                   width: '100%'
                 }}
               >
-                {/* Emerald Header Strip with subtle background glow */}
-                <div style={{ height: '95px', background: 'linear-gradient(135deg, #00875a 0%, #004c32 100%)', position: 'relative', padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                {/* Header Banner */}
+                <div style={{ height: '80px', background: 'linear-gradient(135deg, #00875a 0%, #005c3d 100%)', position: 'relative', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexShrink: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Building2 size={16} style={{ color: '#6ee7b7' }} />
-                    <span style={{ color: 'white', fontSize: '11px', fontWeight: '900', letterSpacing: '1px', textTransform: 'uppercase', opacity: 0.9 }}>
-                      RealtyOS Hub
-                    </span>
+                    <Building2 size={14} style={{ color: '#6ee7b7' }} />
+                    <span style={{ color: 'white', fontSize: '10px', fontWeight: '900', letterSpacing: '1.5px', textTransform: 'uppercase', opacity: 0.9 }}>RealtyOS Hub</span>
                   </div>
-                  <span style={{ background: 'rgba(255, 255, 255, 0.25)', backdropFilter: 'blur(8px)', color: 'white', padding: '4px 12px', borderRadius: '14px', fontSize: '12px', fontWeight: '900', letterSpacing: '0.5px', border: '1px solid rgba(255,255,255,0.4)' }}>
+                  <span style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', color: 'white', padding: '3px 10px', borderRadius: '10px', fontSize: '11px', fontWeight: '900', letterSpacing: '0.5px', border: '1px solid rgba(255,255,255,0.35)' }}>
                     {emp.id}
+                  </span>
+                  {/* Decorative circles */}
+                  <div style={{ position: 'absolute', bottom: '-20px', left: '-20px', width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255,255,255,0.06)', pointerEvents: 'none' }} />
+                  <div style={{ position: 'absolute', top: '-30px', right: '80px', width: '90px', height: '90px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', pointerEvents: 'none' }} />
+                </div>
+
+                {/* Avatar Row — sits below header, overlapping */}
+                <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', padding: '0 20px', marginTop: '-28px', position: 'relative', zIndex: 10 }}>
+                  <div style={{ width: '72px', height: '72px', borderRadius: '50%', border: '4px solid white', overflow: 'hidden', background: '#e2e8f0', boxShadow: '0 8px 20px -4px rgba(0,0,0,0.2)', flexShrink: 0 }}>
+                    <img src={emp.passportPhoto} alt={emp.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                  {/* Status pill — top right of avatar row */}
+                  <span style={{
+                    marginBottom: '6px',
+                    display: 'inline-flex', alignItems: 'center', gap: '5px',
+                    padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '800',
+                    background: emp.status === 'Active' ? '#ecfdf5' : '#fffbeb',
+                    color: emp.status === 'Active' ? '#059669' : '#d97706',
+                    border: `1px solid ${emp.status === 'Active' ? '#6ee7b740' : '#fcd34d60'}`,
+                    boxShadow: emp.status === 'Active' ? '0 0 0 3px #ecfdf5' : '0 0 0 3px #fffbeb'
+                  }}>
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: emp.status === 'Active' ? '#10b981' : '#f59e0b', boxShadow: emp.status === 'Active' ? '0 0 6px #10b981' : 'none' }} />
+                    {emp.status}
                   </span>
                 </div>
 
-                {/* Centered Avatar Overlapping Seam */}
-                <div style={{ alignSelf: 'center', marginTop: '-48px', width: '96px', height: '96px', borderRadius: '50%', border: '5px solid white', overflow: 'hidden', background: '#e2e8f0', boxShadow: '0 12px 25px -5px rgba(0, 0, 0, 0.25)', zIndex: 10 }}>
-                  <img src={emp.passportPhoto} alt={emp.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                {/* Name & Role */}
+                <div style={{ padding: '10px 20px 0' }}>
+                  <h3 style={{ fontSize: '17px', fontWeight: '900', color: 'var(--text-main)', margin: '0 0 5px', lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {emp.name}
+                  </h3>
+                  <span style={{ display: 'inline-block', padding: '3px 12px', background: '#ecfdf5', color: '#00875a', borderRadius: '14px', fontSize: '11px', fontWeight: '800', border: '1px solid #10b98130', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {emp.role}
+                  </span>
                 </div>
 
-                {/* Employee Card Details */}
-                <div style={{ padding: '16px 28px 24px', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '16px' }}>
-                  <div>
-                    <h3 style={{ fontSize: '22px', fontWeight: '900', color: 'var(--text-main)', margin: '0 0 4px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                      {emp.name}
-                      <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: emp.status === 'Active' ? '#10b981' : '#f59e0b', boxShadow: emp.status === 'Active' ? '0 0 10px #10b981' : 'none' }} title={emp.status} />
-                    </h3>
-                    <span style={{ display: 'inline-block', padding: '4px 14px', background: '#ecfdf5', color: '#00875a', borderRadius: '16px', fontSize: '12px', fontWeight: '800', border: '1px solid #10b98140' }}>
-                      {emp.role}
-                    </span>
+                {/* Info Grid — Dept, Rank, Contract, Joined */}
+                <div style={{ margin: '14px 20px 0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '10px 12px', border: '1px solid #f1f5f9' }}>
+                    <span style={{ fontSize: '9px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.8px', display: 'block', marginBottom: '3px' }}>Department</span>
+                    <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-main)', display: 'block', lineHeight: 1.3 }}>{emp.dept}</span>
                   </div>
+                  <div style={{ background: '#f0f4ff', borderRadius: '14px', padding: '10px 12px', border: '1px solid #e0e7ff' }}>
+                    <span style={{ fontSize: '9px', fontWeight: '800', color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.8px', display: 'block', marginBottom: '3px' }}>Rank</span>
+                    <span style={{ fontSize: '12px', fontWeight: '800', color: '#4338ca', display: 'block', lineHeight: 1.3 }}>{emp.rank}</span>
+                  </div>
+                  <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '10px 12px', border: '1px solid #f1f5f9' }}>
+                    <span style={{ fontSize: '9px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.8px', display: 'block', marginBottom: '3px' }}>Contract</span>
+                    <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-main)', display: 'block', lineHeight: 1.3 }}>{emp.contract || 'Full-Time'}</span>
+                  </div>
+                  <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '10px 12px', border: '1px solid #f1f5f9' }}>
+                    <span style={{ fontSize: '9px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.8px', display: 'block', marginBottom: '3px' }}>Joined</span>
+                    <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-main)', display: 'block', lineHeight: 1.3 }}>{emp.joined || '—'}</span>
+                  </div>
+                </div>
 
-                  {/* Dept & Rank Badges Container */}
-                  <div style={{ width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', padding: '14px', background: 'white', borderRadius: '20px', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
-                    <div>
-                      <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '2px' }}>Department</span>
-                      <span style={{ fontSize: '13px', fontWeight: '800', color: 'var(--text-main)', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{emp.dept}</span>
-                    </div>
-                    <div style={{ borderLeft: '1px solid rgba(0,0,0,0.06)', paddingLeft: '8px' }}>
-                      <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '2px' }}>Seniority Rank</span>
-                      <span style={{ fontSize: '13px', fontWeight: '800', color: '#4338ca', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{emp.rank}</span>
-                    </div>
+                {/* Ghana Card ID Strip */}
+                <div style={{ margin: '12px 20px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 14px', background: '#f1f5f9', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Shield size={13} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+                    <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', letterSpacing: '0.5px' }}>{emp.ghanaCardNo || 'GHA-—'}</span>
                   </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#334155', fontWeight: '800', fontSize: '11px' }}>
+                    <QrCode size={13} style={{ color: 'var(--primary)' }} /> Secure Tag
+                  </div>
+                </div>
 
-                  <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', padding: '12px 16px', background: '#f1f5f9', borderRadius: '16px', border: '1px solid #e2e8f0', marginTop: 'auto' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Shield size={14} style={{ color: 'var(--primary)' }} />
-                      <span style={{ letterSpacing: '0.5px' }}>{emp.ghanaCardNo}</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-main)', fontWeight: '800' }}>
-                      <QrCode size={16} style={{ color: 'var(--primary)' }} /> Secure Tag
-                    </div>
-                  </div>
-
-                  {/* Footer Action Buttons */}
-                  <div style={{ width: '100%', display: 'grid', gridTemplateColumns: '1fr 1.25fr', gap: '10px', marginTop: '4px' }}>
-                    <button
-                      onClick={() => openProfile(emp)}
-                      title="Inspect Full HR Dossier"
-                      style={{ padding: '12px', borderRadius: '16px', background: 'white', border: '1px solid #cbd5e1', color: '#334155', fontSize: '13px', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 10px rgba(0,0,0,0.04)' }}
-                    >
-                      <Eye size={16} style={{ color: 'var(--text-muted)' }} /> Dossier
-                    </button>
-                    <button
-                      onClick={() => triggerPrintIDTag(emp)}
-                      title="Print Official ID Tag (PDF / PNG)"
-                      style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '12px', borderRadius: '16px', fontSize: '13px', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', boxShadow: '0 8px 20px -4px rgba(0, 135, 90, 0.4)', transition: 'all 0.2s' }}
-                    >
-                      <Printer size={16} /> Print ID Tag
-                    </button>
-                  </div>
+                {/* Footer Action Buttons */}
+                <div style={{ padding: '12px 20px 20px', display: 'flex', gap: '10px', marginTop: 'auto' }}>
+                  <button
+                    onClick={() => openProfile(emp)}
+                    title="Inspect Full HR Dossier"
+                    style={{ flex: 1, padding: '11px 0', borderRadius: '14px', background: 'white', border: '1px solid #e2e8f0', color: '#334155', fontSize: '12px', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
+                  >
+                    <Eye size={14} style={{ color: 'var(--text-muted)' }} /> Dossier
+                  </button>
+                  <button
+                    onClick={() => triggerPrintIDTag(emp)}
+                    title="Print Official ID Tag (PDF / PNG)"
+                    style={{ flex: 1.4, padding: '11px 0', borderRadius: '14px', background: 'linear-gradient(135deg, #00875a, #005c3d)', color: 'white', border: 'none', fontSize: '12px', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', cursor: 'pointer', boxShadow: '0 6px 16px -4px rgba(0, 135, 90, 0.45)', transition: 'all 0.2s' }}
+                  >
+                    <Printer size={14} /> Print ID Tag
+                  </button>
                 </div>
               </motion.div>
             ))}
@@ -1323,7 +1344,7 @@ const HR = () => {
                   <motion.tr key={pay.id} variants={itemVariants} style={{ borderBottom: '1px solid var(--border-dark)', background: idx % 2 === 0 ? 'white' : '#fcfdfd' }}>
                     <td style={{ padding: '18px 24px' }}>
                       <span style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text-main)', display: 'block' }}>{pay.monthYear} Payroll</span>
-                      <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>Ref: {pay.id} • {pay.runDate}</span>
+                      <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>Ref: {pay.id} â€¢ {pay.runDate}</span>
                     </td>
                     <td style={{ padding: '18px 24px', fontSize: '15px', fontWeight: '800', color: 'var(--text-main)' }}>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', background: '#f1f5f9', borderRadius: '8px' }}>
@@ -1418,7 +1439,7 @@ const HR = () => {
                   <motion.tr key={ln.id} variants={itemVariants} style={{ borderBottom: '1px solid var(--border-dark)', background: idx % 2 === 0 ? 'white' : '#fcfdfd' }}>
                     <td style={{ padding: '18px 24px' }}>
                       <span style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text-main)', display: 'block' }}>{ln.employee}</span>
-                      <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>Ref: {ln.id} • Disbursed {ln.dateDisbursed}</span>
+                      <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>Ref: {ln.id} â€¢ Disbursed {ln.dateDisbursed}</span>
                     </td>
                     <td style={{ padding: '18px 24px', fontSize: '16px', fontWeight: '800', color: 'var(--primary)' }}>
                       {ln.formattedPrincipal}
@@ -1736,7 +1757,7 @@ const HR = () => {
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px' }}>Gross Monthly Compensation (GHS ₵)</label>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px' }}>Gross Monthly Compensation (GHS â‚µ)</label>
                       <input type="number" name="salary" required defaultValue={7500} style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid #cbd5e1', fontSize: '15px', fontWeight: '800', color: '#00875a', outline: 'none', background: '#f8fafc', boxSizing: 'border-box' }} />
                     </div>
                     <div>
@@ -1818,7 +1839,7 @@ const HR = () => {
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', background: '#fff1f2', padding: '24px', borderRadius: '20px', border: '1px solid #fecdd3' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '900', color: '#9f1239', marginBottom: '8px' }}>🚨 Emergency Contact Name & Relation</label>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '900', color: '#9f1239', marginBottom: '8px' }}>ðŸš¨ Emergency Contact Name & Relation</label>
                       <input type="text" name="emergencyName" required placeholder="e.g. Grace Tutu (Wife)" style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid #fca5a5', fontSize: '14px', fontWeight: '700', outline: 'none', background: 'white', boxSizing: 'border-box', color: '#881337' }} />
                     </div>
                     <div>
@@ -2012,7 +2033,7 @@ const HR = () => {
                   {/* Emergency Block at the bottom */}
                   <div style={{ marginTop: '24px', background: '#fff1f2', border: '1px solid #fecdd3', padding: '16px 20px', borderRadius: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', textAlign: 'left' }}>
                     <div>
-                      <span style={{ fontSize: '10px', color: '#e11d48', fontWeight: '900', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>🚨 IN CASE OF EMERGENCY</span>
+                      <span style={{ fontSize: '10px', color: '#e11d48', fontWeight: '900', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>ðŸš¨ IN CASE OF EMERGENCY</span>
                       <span style={{ fontSize: '15px', color: '#881337', fontWeight: '900', marginTop: '2px', display: 'block' }}>{printableTagEmployee.emergencyName || 'HR Support Desk'}</span>
                     </div>
                     <span style={{ fontSize: '13px', color: '#e11d48', fontWeight: '900', background: 'white', padding: '6px 12px', borderRadius: '12px', border: '1px solid #ffe4e6', boxShadow: '0 2px 6px rgba(225,29,72,0.15)', flexShrink: 0 }}>
@@ -2089,14 +2110,14 @@ const HR = () => {
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                       <span style={{ padding: '4px 10px', borderRadius: '20px', backgroundColor: 'var(--primary-glow)', color: 'var(--primary)', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase' }}>
-                        {selectedStaffProfile.id} • {selectedStaffProfile.status}
+                        {selectedStaffProfile.id} â€¢ {selectedStaffProfile.status}
                       </span>
                       <span style={{ fontSize: '14px', fontWeight: '800', color: '#d97706', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Star size={16} fill="#f59e0b" color="#f59e0b" /> {selectedStaffProfile.rating} ⭐
+                        <Star size={16} fill="#f59e0b" color="#f59e0b" /> {selectedStaffProfile.rating} â­
                       </span>
                     </div>
                     <h3 style={{ fontSize: '26px', fontWeight: '800', color: 'var(--text-main)', margin: 0 }}>{selectedStaffProfile.name}</h3>
-                    <p style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: '600', margin: '2px 0 0' }}>{selectedStaffProfile.role} • {selectedStaffProfile.dept}</p>
+                    <p style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: '600', margin: '2px 0 0' }}>{selectedStaffProfile.role} â€¢ {selectedStaffProfile.dept}</p>
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -2204,7 +2225,7 @@ const HR = () => {
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Monthly Salary (₵)</label>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Monthly Salary (â‚µ)</label>
                       <input
                         type="number"
                         required
@@ -2518,15 +2539,15 @@ const HR = () => {
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                     <span style={{ fontSize: '14px', fontWeight: '700' }}>Total Gross Salary:</span>
-                    <span style={{ fontSize: '14px', fontWeight: '800' }}>₵ {calculatedTotalGross.toLocaleString()}</span>
+                    <span style={{ fontSize: '14px', fontWeight: '800' }}>â‚µ {calculatedTotalGross.toLocaleString()}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', color: '#ef4444' }}>
                     <span style={{ fontSize: '14px', fontWeight: '700' }}>Loan Deductions:</span>
-                    <span style={{ fontSize: '14px', fontWeight: '800' }}>- ₵ {activeLoanDeductionsTotal.toLocaleString()}</span>
+                    <span style={{ fontSize: '14px', fontWeight: '800' }}>- â‚µ {activeLoanDeductionsTotal.toLocaleString()}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #cbd5e1', color: 'var(--primary)' }}>
                     <span style={{ fontSize: '16px', fontWeight: '900' }}>Net ACH Payout:</span>
-                    <span style={{ fontSize: '16px', fontWeight: '900' }}>₵ {calculatedNetDisbursement.toLocaleString()}</span>
+                    <span style={{ fontSize: '16px', fontWeight: '900' }}>â‚µ {calculatedNetDisbursement.toLocaleString()}</span>
                   </div>
                 </div>
                 <div>
@@ -2565,7 +2586,7 @@ const HR = () => {
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '8px' }}>Principal Amount (₵)</label>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '8px' }}>Principal Amount (â‚µ)</label>
                     <input type="number" name="principal" required placeholder="e.g. 10000" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc', boxSizing: 'border-box' }} />
                   </div>
                   <div>
@@ -2729,10 +2750,10 @@ const HR = () => {
                               onChange={(e) => handleUpdateRosterRow(idx, 'status', e.target.value)}
                               style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', fontWeight: '700' }}
                             >
-                              <option value="🟢 Present (On Time)">🟢 Present (On Time)</option>
-                              <option value="🟡 Present (Late)">🟡 Present (Late)</option>
-                              <option value="🔴 Unexcused Absent">🔴 Unexcused Absent</option>
-                              <option value="🏖️ Approved Leave">🏖️ Approved Leave</option>
+                              <option value="ðŸŸ¢ Present (On Time)">ðŸŸ¢ Present (On Time)</option>
+                              <option value="ðŸŸ¡ Present (Late)">ðŸŸ¡ Present (Late)</option>
+                              <option value="ðŸ”´ Unexcused Absent">ðŸ”´ Unexcused Absent</option>
+                              <option value="ðŸ–ï¸ Approved Leave">ðŸ–ï¸ Approved Leave</option>
                             </select>
                           </td>
                           <td style={{ padding: '12px 24px' }}>
@@ -2772,3 +2793,4 @@ const HR = () => {
 };
 
 export default HR;
+
