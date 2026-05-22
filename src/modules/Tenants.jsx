@@ -24,7 +24,10 @@ const Tenants = () => {
 
   const handleExportReceiptPdf = async () => {
     setIsGeneratingPdf(true);
-    await generateRealPDF('#printable-receipt-container', `Rent_Receipt_${printableReceipt?.receiptNo || 'REC'}.pdf`, { orientation: 'p' });
+    await generateRealPDF('#printable-receipt-container', `Rent_Receipt_${printableReceipt?.receiptNo || 'REC'}.pdf`, { 
+      orientation: 'p', 
+      singlePage: true 
+    });
     setIsGeneratingPdf(false);
   };
 
@@ -459,6 +462,35 @@ const Tenants = () => {
   const arrearsCount = useMemo(() => tenantsList.filter(t => t.rentStatus.includes('Arrears')).length, [tenantsList]);
   const outstandingDepositTotal = useMemo(() => tenantsList.reduce((acc, t) => acc + t.securityDeposit, 0), [tenantsList]);
 
+  const totalCollectedToDate = useMemo(() => {
+    return tenantsList.reduce((acc, t) => {
+      const tenantTotal = (t.paymentHistory || []).reduce((sum, h) => sum + (Number(h.amount) || 0), 0);
+      return acc + tenantTotal;
+    }, 0);
+  }, [tenantsList]);
+
+  const totalOutstandingArrears = useMemo(() => {
+    return tenantsList.reduce((acc, t) => {
+      if (t.rentStatus === 'Arrears / Overdue') {
+        const consumedMonths = getArrearsConsumedMonths(t) || 1;
+        return acc + (t.monthlyRent * consumedMonths);
+      }
+      return acc;
+    }, 0);
+  }, [tenantsList]);
+
+  const collectionRate = useMemo(() => {
+    const total = totalCollectedToDate + totalOutstandingArrears;
+    if (total === 0) return 100;
+    return Math.round((totalCollectedToDate / total) * 100);
+  }, [totalCollectedToDate, totalOutstandingArrears]);
+
+  const occupancyPercentage = useMemo(() => {
+    if (tenantsList.length === 0) return 0;
+    const active = tenantsList.filter(t => t.status === 'Active Lease').length;
+    return Math.round((active / tenantsList.length) * 100);
+  }, [tenantsList]);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', width: '100%', boxSizing: 'border-box' }}>
       
@@ -655,215 +687,575 @@ const Tenants = () => {
 
       {/* --- TAB CONTENT 1: DIRECTORY --- */}
       {activeTab === 'directory' && (
-        <div style={{ background: 'white', borderRadius: '28px', border: '1px solid #cbd5e1', overflow: 'hidden', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.05)' }}>
-          <div style={{ padding: '24px 32px', borderBottom: '1px solid #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div style={{ background: 'white', padding: '24px 32px', borderRadius: '24px', border: '1px solid #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.01)' }}>
             <div>
-              <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: 'var(--text-main)' }}>Residential & Commercial Tenant Roster</h3>
-              <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '600' }}>Showing {filteredTenants.length} matching leases</span>
+              <h3 style={{ margin: 0, fontSize: '22px', fontWeight: '900', color: 'var(--text-main)' }}>Residential & Commercial Tenant Roster</h3>
+              <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '600' }}>Showing {filteredTenants.length} active matching leases</span>
             </div>
           </div>
 
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-            <thead>
-              <tr style={{ background: '#f8fafc', borderBottom: '2px solid #cbd5e1', color: 'var(--text-muted)', fontSize: '12px', fontWeight: '800', textTransform: 'uppercase' }}>
-                <th style={{ padding: '18px 24px' }}>Resident & Unit Details</th>
-                <th style={{ padding: '18px 24px' }}>Contact Details</th>
-                <th style={{ padding: '18px 24px' }}>Ghana Card PIN</th>
-                <th style={{ padding: '18px 24px' }}>Lease Period</th>
-                <th style={{ padding: '18px 24px' }}>Rent & Status</th>
-                <th style={{ padding: '18px 24px', textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredTenants.length === 0 ? (
-                <tr>
-                  <td colSpan="6" style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                    <AlertTriangle size={36} style={{ marginBottom: '12px', color: '#94a3b8' }} />
-                    <h4 style={{ margin: '0 0 6px', fontSize: '18px', fontWeight: '800' }}>No Resident Records Found</h4>
-                    <span style={{ fontSize: '14px' }}>Adjust your keyword search or property filters above.</span>
-                  </td>
-                </tr>
-              ) : (
-                filteredTenants.map((tenant, idx) => (
-                  <tr 
-                    key={tenant.id} 
-                    style={{ 
-                      borderBottom: idx === filteredTenants.length - 1 ? 'none' : '1px solid #e2e8f0',
-                      transition: 'background 0.2s',
-                      cursor: 'pointer'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+          {filteredTenants.length === 0 ? (
+            <div style={{ background: 'white', borderRadius: '28px', border: '1px solid #cbd5e1', padding: '60px 20px', textAlign: 'center', color: 'var(--text-muted)', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.05)' }}>
+              <AlertTriangle size={48} style={{ marginBottom: '16px', color: '#94a3b8' }} />
+              <h4 style={{ margin: '0 0 6px', fontSize: '20px', fontWeight: '800', color: 'var(--text-main)' }}>No Resident Records Found</h4>
+              <span style={{ fontSize: '14px' }}>Adjust your keyword search or property filters above.</span>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '24px' }}>
+              {filteredTenants.map((tenant) => {
+                const leaseInfo = calculateLeaseStatus(tenant);
+                
+                // Determine if Residential or Commercial
+                const isCommercial = tenant.property.toLowerCase().includes('office') || 
+                                     tenant.property.toLowerCase().includes('retail') || 
+                                     tenant.property.toLowerCase().includes('shop') || 
+                                     tenant.property.toLowerCase().includes('peninsula') ||
+                                     tenant.property.toLowerCase().includes('commercial');
+                
+                // Calculate lease progress percentage
+                const start = new Date(tenant.leaseStart);
+                const end = new Date(tenant.leaseEnd);
+                const now = new Date();
+                let leasePercent = 100;
+                if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+                  const total = end.getTime() - start.getTime();
+                  const elapsed = now.getTime() - start.getTime();
+                  if (total > 0) {
+                    leasePercent = Math.min(100, Math.max(0, (elapsed / total) * 100));
+                  }
+                }
+                
+                let progressColor = '#10b981';
+                if (leaseInfo.statusText.includes('Critical') || leaseInfo.isOverdue) {
+                  progressColor = '#ef4444';
+                } else if (leaseInfo.statusText.includes('Expiry') || leaseInfo.statusText.includes('Nearing')) {
+                  progressColor = '#f59e0b';
+                }
+                
+                const gradients = [
+                  'linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%)',
+                  'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  'linear-gradient(135deg, #f59e0b 0%, #e11d48 100%)',
+                  'linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%)',
+                  'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)'
+                ];
+                const avatarBg = gradients[Math.abs(tenant.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)) % gradients.length];
+                
+                return (
+                  <motion.div
+                    key={tenant.id}
+                    whileHover={{ y: -6, boxShadow: '0 20px 40px -15px rgba(15, 23, 42, 0.12)' }}
                     onClick={() => setSelectedTenantProfile(tenant)}
+                    style={{
+                      background: 'white',
+                      border: leaseInfo.isOverdue ? '2px solid #ef4444' : '1px solid #cbd5e1',
+                      borderRadius: '28px',
+                      padding: '24px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '18px',
+                      position: 'relative',
+                      boxShadow: '0 8px 24px -8px rgba(0, 0, 0, 0.04)',
+                      transition: 'border-color 0.2s ease',
+                      boxSizing: 'border-box'
+                    }}
                   >
-                    <td style={{ padding: '20px 24px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'linear-gradient(135deg, var(--primary) 0%, #0f172a 100%)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '18px', border: '2px solid white', boxShadow: '0 4px 10px rgba(0,0,0,0.08)', flexShrink: 0 }}>
-                          {getInitials(tenant.name)}
-                        </div>
-                        <div>
-                          <span style={{ fontWeight: '900', fontSize: '15px', color: 'var(--text-main)', display: 'block', letterSpacing: '-0.3px' }}>{tenant.name}</span>
-                          <span style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
-                            <Home size={12} /> {tenant.property} • <strong style={{ color: '#334155' }}>{tenant.unit}</strong>
+                    {/* Header: Initial + Name + Type Badge */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                      <div style={{ 
+                        width: '52px', 
+                        height: '52px', 
+                        borderRadius: '16px', 
+                        background: avatarBg, 
+                        color: 'white', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        fontWeight: '900', 
+                        fontSize: '20px', 
+                        border: '2px solid white', 
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)', 
+                        flexShrink: 0 
+                      }}>
+                        {getInitials(tenant.name)}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+                          <span style={{ 
+                            fontWeight: '900', 
+                            fontSize: '16px', 
+                            color: 'var(--text-main)', 
+                            letterSpacing: '-0.3px',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                          }}>
+                            {tenant.name}
+                          </span>
+                          <span style={{
+                            padding: '3px 8px',
+                            borderRadius: '8px',
+                            fontSize: '10px',
+                            fontWeight: '800',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            background: isCommercial ? '#faf5ff' : '#e0f2fe',
+                            color: isCommercial ? '#7c3aed' : '#0369a1',
+                            border: isCommercial ? '1px solid #d8b4fe' : '1px solid #bae6fd'
+                          }}>
+                            {isCommercial ? '💼 Commercial' : '🏠 Residential'}
                           </span>
                         </div>
+                        <span style={{ 
+                          fontSize: '12px', 
+                          color: 'var(--primary)', 
+                          fontWeight: '800', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '4px', 
+                          marginTop: '4px' 
+                        }}>
+                          <Home size={12} /> {tenant.property} • <strong style={{ color: '#334155' }}>{tenant.unit}</strong>
+                        </span>
                       </div>
-                    </td>
-                    <td style={{ padding: '20px 24px' }}>
-                      <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-main)', display: 'block' }}>{tenant.email}</span>
-                      <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600', marginTop: '2px', display: 'block' }}>{tenant.phone}</span>
-                    </td>
-                    <td style={{ padding: '20px 24px' }}>
-                      <span style={{ fontSize: '13px', fontWeight: '800', color: '#00875a', background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '4px 10px', borderRadius: '12px', letterSpacing: '0.5px' }}>
-                        {tenant.ghanaCardNo}
-                      </span>
-                    </td>
-                    <td style={{ padding: '20px 24px' }}>
-                      <span style={{ fontSize: '13px', fontWeight: '800', color: 'var(--text-main)', display: 'block' }}>{tenant.leaseStart}</span>
-                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', marginTop: '2px', display: 'block' }}>Expires: {tenant.leaseEnd}</span>
-                    </td>
-                    <td style={{ padding: '20px 24px' }}>
-                      <span style={{ fontSize: '15px', fontWeight: '900', color: 'var(--text-main)', display: 'block' }}>
-                        ₵{tenant.monthlyRent.toLocaleString()} <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)' }}>/mo</span>
-                      </span>
-                      <span style={{ display: 'inline-block', marginTop: '4px', padding: '3px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: '800', background: tenant.rentStatus === 'Paid Up' ? '#ecfdf5' : '#fef2f2', color: tenant.rentStatus === 'Paid Up' ? '#059669' : '#dc2626', border: tenant.rentStatus === 'Paid Up' ? '1px solid #a7f3d0' : '1px solid #fca5a5' }}>
-                        {tenant.rentStatus}
-                      </span>
-                    </td>
-                    <td style={{ padding: '20px 24px', textAlign: 'right' }}>
-                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }} onClick={(e) => e.stopPropagation()}>
+                    </div>
+
+                    {/* Contact Bar */}
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between', 
+                      background: '#f8fafc', 
+                      padding: '10px 14px', 
+                      borderRadius: '16px',
+                      border: '1px solid #e2e8f0',
+                      gap: '8px'
+                    }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                        <span style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tenant.email}</span>
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', marginTop: '2px' }}>{tenant.phone}</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                        <a href={`mailto:${tenant.email}`} style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'white', border: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', transition: '0.2s', textDecoration: 'none' }}>
+                          <Mail size={14} />
+                        </a>
+                        <a href={`tel:${tenant.phone}`} style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'white', border: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', transition: '0.2s', textDecoration: 'none' }}>
+                          <PhoneCall size={14} />
+                        </a>
+                      </div>
+                    </div>
+
+                    {/* Financials block: Rent & Security deposit */}
+                    <div style={{ 
+                      display: 'grid', 
+                      gridTemplateColumns: '1fr 1fr', 
+                      gap: '12px',
+                      borderBottom: '1px solid #f1f5f9',
+                      paddingBottom: '16px'
+                    }}>
+                      <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                        <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Monthly Rent</span>
+                        <span style={{ fontSize: '16px', fontWeight: '900', color: 'var(--text-main)', fontFamily: 'monospace', marginTop: '4px', display: 'block' }}>₵{tenant.monthlyRent.toLocaleString()}</span>
+                      </div>
+                      <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                        <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Security Deposit</span>
+                        <span style={{ fontSize: '16px', fontWeight: '900', color: '#00875a', fontFamily: 'monospace', marginTop: '4px', display: 'block' }}>₵{tenant.securityDeposit.toLocaleString()}</span>
+                      </div>
+                    </div>
+
+                    {/* Lease Status & Progress Bar */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Lease Duration Meter</span>
+                        <span style={{ 
+                          padding: '3px 8px', 
+                          borderRadius: '8px', 
+                          fontSize: '10px', 
+                          fontWeight: '800', 
+                          background: leaseInfo.badgeBg, 
+                          color: leaseInfo.badgeColor, 
+                          border: `1px solid ${leaseInfo.badgeBorder}` 
+                        }}>
+                          {leaseInfo.statusText}
+                        </span>
+                      </div>
+                      
+                      {tenant.leaseStart && tenant.leaseStart !== '-' ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <div style={{ width: '100%', height: '8px', borderRadius: '4px', background: '#e2e8f0', overflow: 'hidden' }}>
+                            <div style={{ width: `${leasePercent}%`, height: '100%', borderRadius: '4px', background: progressColor, transition: 'width 0.5s ease-out' }}></div>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#64748b', fontWeight: '700' }}>
+                            <span>Start: {tenant.leaseStart}</span>
+                            <span>End: {tenant.leaseEnd}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', fontStyle: 'italic' }}>No active lease dates configured.</span>
+                      )}
+                    </div>
+
+                    {/* Ghana Card KYC Badge */}
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '8px', 
+                      background: '#ecfdf5', 
+                      border: '1px solid #a7f3d0', 
+                      padding: '10px 14px', 
+                      borderRadius: '16px' 
+                    }}>
+                      <ShieldCheck size={18} style={{ color: '#10b981', flexShrink: 0 }} />
+                      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                        <span style={{ fontSize: '10px', fontWeight: '800', color: '#065f46', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Ghana Card Verified KYC</span>
+                        <span style={{ fontSize: '12px', fontWeight: '900', color: '#047857', fontFamily: 'monospace', letterSpacing: '0.5px' }}>{tenant.ghanaCardNo}</span>
+                      </div>
+                    </div>
+
+                    {/* Quick-Action Dock */}
+                    <div style={{ 
+                      display: 'flex', 
+                      gap: '8px', 
+                      borderTop: '1px solid #cbd5e1', 
+                      paddingTop: '16px', 
+                      marginTop: 'auto',
+                      justifyContent: 'space-between'
+                    }} onClick={(e) => e.stopPropagation()}>
+                      <div style={{ display: 'flex', gap: '8px' }}>
                         <button
                           title="Edit Resident Profile"
-                          onClick={(e) => { e.stopPropagation(); setTenantToEdit(tenant); setShowEditModal(true); }}
+                          onClick={() => { setTenantToEdit(tenant); setShowEditModal(true); }}
                           style={{ background: '#eff6ff', border: '1px solid #bfdbfe', width: '36px', height: '36px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb', cursor: 'pointer', transition: '0.2s' }}
                           onMouseEnter={(e) => e.currentTarget.style.background = '#dbeafe'}
                           onMouseLeave={(e) => e.currentTarget.style.background = '#eff6ff'}
                         >
-                          <Edit3 size={18} />
+                          <Edit3 size={16} />
                         </button>
                         <button
                           title="Delete Resident Profile"
-                          onClick={(e) => { e.stopPropagation(); handleDeleteResident(tenant.id, tenant.name, tenant.unit); }}
+                          onClick={() => handleDeleteResident(tenant.id, tenant.name, tenant.unit)}
                           style={{ background: '#fee2e2', border: '1px solid #fecaca', width: '36px', height: '36px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#dc2626', cursor: 'pointer', transition: '0.2s' }}
                           onMouseEnter={(e) => e.currentTarget.style.background = '#fcd3d3'}
                           onMouseLeave={(e) => e.currentTarget.style.background = '#fee2e2'}
                         >
-                          <Trash2 size={18} />
+                          <Trash2 size={16} />
                         </button>
                         <button
                           title="Audit Payment History & Ledger"
-                          onClick={(e) => { e.stopPropagation(); setSelectedHistoryTenant(tenant); }}
+                          onClick={() => setSelectedHistoryTenant(tenant)}
                           style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', width: '36px', height: '36px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', cursor: 'pointer', transition: '0.2s' }}
                           onMouseEnter={(e) => e.currentTarget.style.background = '#e2e8f0'}
                           onMouseLeave={(e) => e.currentTarget.style.background = '#f1f5f9'}
                         >
-                          <History size={18} />
-                        </button>
-                        <button
-                          title="Log Rent Receipt"
-                          onClick={() => { setPaymentTenant(tenant); setPaymentAmount(tenant.monthlyRent); setShowLogPaymentModal(true); }}
-                          style={{ background: '#ecfdf5', border: '1px solid #10b981', padding: '0 14px', height: '36px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px', color: '#00875a', fontWeight: '800', fontSize: '13px', cursor: 'pointer', transition: '0.2s' }}
-                          onMouseEnter={(e) => { e.currentTarget.style.background = '#10b981'; e.currentTarget.style.color = 'white'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.background = '#ecfdf5'; e.currentTarget.style.color = '#00875a'; }}
-                        >
-                          <DollarSign size={16} /> Pay
+                          <History size={16} />
                         </button>
                       </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                      <button
+                        onClick={() => { setPaymentTenant(tenant); setPaymentAmount(tenant.monthlyRent); setShowLogPaymentModal(true); }}
+                        style={{ background: '#ecfdf5', border: '1px solid #10b981', padding: '0 14px', height: '36px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px', color: '#00875a', fontWeight: '800', fontSize: '13px', cursor: 'pointer', transition: '0.2s' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = '#10b981'; e.currentTarget.style.color = 'white'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = '#ecfdf5'; e.currentTarget.style.color = '#00875a'; }}
+                      >
+                        <DollarSign size={14} /> Pay Rent
+                      </button>
+                    </div>
+
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
       {/* --- TAB CONTENT 2: RENT LEDGER & ROLL --- */}
       {activeTab === 'rent-roll' && (
-        <div style={{ background: 'white', borderRadius: '28px', border: '1px solid #cbd5e1', padding: '32px', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.05)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', borderBottom: '1px solid #cbd5e1', paddingBottom: '20px' }}>
-            <div>
-              <h3 style={{ margin: 0, fontSize: '22px', fontWeight: '900', color: 'var(--text-main)' }}>Comprehensive Rent Roll & Payment Ledger</h3>
-              <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '600' }}>Active lease billing cycles & automated standing orders</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', width: '100%', boxSizing: 'border-box' }}>
+          
+          {/* Visual Financial Metrics Telemetry Tiles */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
+            {/* Tile 1: Gross Expected */}
+            <div style={{ 
+              background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', 
+              color: 'white', 
+              padding: '24px', 
+              borderRadius: '24px', 
+              border: '1px solid rgba(255, 255, 255, 0.1)', 
+              boxShadow: '0 12px 24px -10px rgba(15, 23, 42, 0.3)',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <div style={{ position: 'absolute', right: '-10px', top: '-10px', width: '80px', height: '80px', background: 'radial-gradient(circle, rgba(16,185,129,0.15) 0%, transparent 70%)', pointerEvents: 'none' }}></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <span style={{ fontSize: '12px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.75px' }}>Gross Scheduled Revenue</span>
+                <div style={{ width: '36px', height: '36px', borderRadius: '12px', background: 'rgba(255, 255, 255, 0.1)', color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Landmark size={18} />
+                </div>
+              </div>
+              <h3 style={{ fontSize: '28px', fontWeight: '955', margin: '0 0 4px 0', letterSpacing: '-0.5px', fontFamily: 'monospace' }}>
+                ₵{totalMonthlyRoll.toLocaleString()}
+              </h3>
+              <span style={{ fontSize: '12px', color: '#cbd5e1', fontWeight: '600' }}>Expected monthly roll</span>
             </div>
-            <span style={{ background: '#f8fafc', padding: '10px 20px', borderRadius: '16px', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: '800', color: 'var(--primary)' }}>
-              Gross Expected Rents: GHS {totalMonthlyRoll.toLocaleString()} / Month
-            </span>
+
+            {/* Tile 2: Total Collected */}
+            <div style={{ 
+              background: 'white', 
+              padding: '24px', 
+              borderRadius: '24px', 
+              border: '1px solid #cbd5e1', 
+              boxShadow: '0 10px 20px -8px rgba(0, 0, 0, 0.04)',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.75px' }}>Total Receipts to Date</span>
+                <div style={{ width: '36px', height: '36px', borderRadius: '12px', background: '#ecfdf5', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Coins size={18} />
+                </div>
+              </div>
+              <h3 style={{ fontSize: '28px', fontWeight: '955', color: 'var(--text-main)', margin: '0 0 6px 0', letterSpacing: '-0.5px', fontFamily: 'monospace' }}>
+                ₵{totalCollectedToDate.toLocaleString()}
+              </h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ flex: 1, height: '6px', borderRadius: '3px', background: '#e2e8f0', overflow: 'hidden' }}>
+                  <div style={{ width: `${collectionRate}%`, height: '100%', background: '#10b981' }}></div>
+                </div>
+                <span style={{ fontSize: '11px', color: '#047857', fontWeight: '850', background: '#ecfdf5', padding: '2px 8px', borderRadius: '8px', border: '1px solid #a7f3d0' }}>
+                  {collectionRate}% efficiency
+                </span>
+              </div>
+            </div>
+
+            {/* Tile 3: Outstanding Arrears */}
+            <div style={{ 
+              background: 'white', 
+              padding: '24px', 
+              borderRadius: '24px', 
+              border: totalOutstandingArrears > 0 ? '1.5px solid #fca5a5' : '1px solid #cbd5e1', 
+              boxShadow: '0 10px 20px -8px rgba(0, 0, 0, 0.04)',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.75px' }}>Outstanding Arrears</span>
+                <div style={{ width: '36px', height: '36px', borderRadius: '12px', background: totalOutstandingArrears > 0 ? '#fee2e2' : '#ecfdf5', color: totalOutstandingArrears > 0 ? '#ef4444' : '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <AlertTriangle size={18} />
+                </div>
+              </div>
+              <h3 style={{ fontSize: '28px', fontWeight: '955', color: totalOutstandingArrears > 0 ? '#dc2626' : '#059669', margin: '0 0 4px 0', letterSpacing: '-0.5px', fontFamily: 'monospace' }}>
+                ₵{totalOutstandingArrears.toLocaleString()}
+              </h3>
+              <span style={{ fontSize: '12px', color: totalOutstandingArrears > 0 ? '#ef4444' : '#64748b', fontWeight: '700' }}>
+                {arrearsCount} account{arrearsCount === 1 ? '' : 's'} past due
+              </span>
+            </div>
+
+            {/* Tile 4: Occupancy Ratio */}
+            <div style={{ 
+              background: 'white', 
+              padding: '24px', 
+              borderRadius: '24px', 
+              border: '1px solid #cbd5e1', 
+              boxShadow: '0 10px 20px -8px rgba(0, 0, 0, 0.04)',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.75px' }}>Portfolio Occupancy</span>
+                <div style={{ width: '36px', height: '36px', borderRadius: '12px', background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Home size={18} />
+                </div>
+              </div>
+              <h3 style={{ fontSize: '28px', fontWeight: '955', color: 'var(--text-main)', margin: '0 0 4px 0', letterSpacing: '-0.5px', fontFamily: 'monospace' }}>
+                {occupancyPercentage}%
+              </h3>
+              <span style={{ fontSize: '12px', color: '#2563eb', fontWeight: '700' }}>
+                {activeTenantsCount} active / {tenantsList.length} total units
+              </span>
+            </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
-            {tenantsList.map(tenant => {
-              const leaseInfo = calculateLeaseStatus(tenant);
-              return (
-                <div key={tenant.id} style={{ background: '#f8fafc', border: leaseInfo.isOverdue ? '2px solid #ef4444' : '1px solid #cbd5e1', borderRadius: '20px', padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: '14px', position: 'relative', boxShadow: leaseInfo.isOverdue ? '0 8px 20px -5px rgba(239,68,68,0.2)' : 'none' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px' }}>
-                    <div>
-                      <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block' }}>{tenant.property}</span>
-                      <h4 style={{ margin: '2px 0 0', fontSize: '16px', fontWeight: '900', color: 'var(--text-main)' }}>{tenant.name}</h4>
-                      <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700' }}>Unit: {tenant.unit} • Expiry: {tenant.leaseEnd}</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      {leaseInfo.dotsColor && (
-                        <div style={{ display: 'flex', gap: '3px', alignItems: 'center', background: 'white', padding: '4px 8px', borderRadius: '14px', border: '1px solid #cbd5e1' }}>
-                          <span className="blinking-dot" style={{ backgroundColor: leaseInfo.dotsColor, animationDelay: '0s', width: '6px', height: '6px' }}></span>
-                          <span className="blinking-dot" style={{ backgroundColor: leaseInfo.dotsColor, animationDelay: '0.2s', width: '6px', height: '6px' }}></span>
-                          <span className="blinking-dot" style={{ backgroundColor: leaseInfo.dotsColor, animationDelay: '0.4s', width: '6px', height: '6px' }}></span>
+          {/* Detailed Financial Ledger Card Grid */}
+          <div style={{ background: 'transparent', padding: '0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '900', color: 'var(--text-main)' }}>Rent Ledger & Roll</h3>
+                <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-muted)', fontWeight: '600' }}>
+                  Showing {filteredTenants.length} leasehold ledger accounts
+                </p>
+              </div>
+            </div>
+
+            {filteredTenants.length === 0 ? (
+              <div style={{ background: 'white', padding: '40px', borderRadius: '28px', border: '1px solid #cbd5e1', textAlign: 'center', color: '#94a3b8' }}>
+                <AlertCircle size={40} style={{ marginBottom: '12px' }} />
+                <h4 style={{ margin: '0 0 4px', fontSize: '16px', fontWeight: '800', color: '#475569' }}>No Ledger Matches</h4>
+                <span style={{ fontSize: '13px' }}>Try adjusting your searches or property filters.</span>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '24px' }}>
+                {filteredTenants.map((tenant, idx) => {
+                  const leaseInfo = calculateLeaseStatus(tenant);
+                  const isCommercial = tenant.property.toLowerCase().includes('office') || 
+                                       tenant.property.toLowerCase().includes('retail') || 
+                                       tenant.property.toLowerCase().includes('shop') || 
+                                       tenant.property.toLowerCase().includes('commercial');
+                  
+                  const tenantTotalCollected = (tenant.paymentHistory || []).reduce((sum, h) => sum + (Number(h.amount) || 0), 0);
+                  const overdueMonths = tenant.rentStatus === 'Arrears / Overdue' ? (getArrearsConsumedMonths(tenant) || 1) : 0;
+                  const tenantOutstanding = overdueMonths * tenant.monthlyRent;
+                  
+                  const initials = getInitials(tenant.name);
+                  
+                  const gradients = [
+                    'linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%)',
+                    'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    'linear-gradient(135deg, #f59e0b 0%, #e11d48 100%)',
+                    'linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%)',
+                    'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)'
+                  ];
+                  const avatarBg = gradients[Math.abs(tenant.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)) % gradients.length];
+                  
+                  return (
+                    <div 
+                      key={tenant.id} 
+                      style={{ 
+                        background: 'white', 
+                        border: tenantOutstanding > 0 ? '2px solid #fca5a5' : '1px solid #cbd5e1', 
+                        borderRadius: '28px', 
+                        padding: '24px', 
+                        boxShadow: '0 8px 24px -8px rgba(0,0,0,0.04)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '18px',
+                        position: 'relative',
+                        boxSizing: 'border-box'
+                      }}
+                    >
+                      {/* Header */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ 
+                          width: '48px', 
+                          height: '48px', 
+                          borderRadius: '14px', 
+                          background: isCommercial ? 'linear-gradient(135deg, #7c3aed 0%, #c084fc 100%)' : 'linear-gradient(135deg, #10b981 0%, #60a5fa 100%)', 
+                          color: 'white', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          fontWeight: '900', 
+                          fontSize: '18px',
+                          flexShrink: 0
+                        }}>
+                          {initials}
                         </div>
-                      )}
-                      <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: '800', background: leaseInfo.badgeBg, color: leaseInfo.badgeColor, border: `1px solid ${leaseInfo.badgeBorder}` }}>
-                        {leaseInfo.statusText}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div style={{ background: 'white', padding: '12px 16px', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                    <div>
-                      <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '800', textTransform: 'uppercase', display: 'block' }}>Monthly Rental</span>
-                      <span style={{ fontSize: '15px', fontWeight: '900', color: 'var(--text-main)', marginTop: '2px', display: 'block' }}>₵{tenant.monthlyRent.toLocaleString()}</span>
-                    </div>
-                    <div>
-                      <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '800', textTransform: 'uppercase', display: 'block' }}>Security Deposit</span>
-                      <span style={{ fontSize: '15px', fontWeight: '900', color: '#00875a', marginTop: '2px', display: 'block' }}>₵{tenant.securityDeposit.toLocaleString()}</span>
-                    </div>
-                    <div style={{ gridColumn: 'span 2', borderTop: '1px solid #f1f5f9', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '800', textTransform: 'uppercase', display: 'block' }}>Professional Affiliation</span>
-                        <span style={{ fontSize: '12px', fontWeight: '800', color: '#334155' }}>{tenant.occupation || 'Executive'} • {tenant.employer || 'Independent Professional'}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                            <span style={{ fontWeight: '900', fontSize: '16px', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {tenant.name}
+                            </span>
+                            <span style={{ 
+                              padding: '4px 10px', 
+                              borderRadius: '10px', 
+                              fontSize: '10px', 
+                              fontWeight: '800', 
+                              background: leaseInfo.badgeBg, 
+                              color: leaseInfo.badgeColor, 
+                              border: `1px solid ${leaseInfo.badgeBorder}`,
+                              whiteSpace: 'nowrap'
+                            }}>
+                              {leaseInfo.statusText}
+                            </span>
+                          </div>
+                          <span style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+                            <Home size={12} /> {tenant.property.replace('RealtyOS ', '')} • <strong style={{ color: '#334155' }}>{tenant.unit}</strong>
+                          </span>
+                        </div>
                       </div>
-                      {leaseInfo.isOverdue && (
-                        <span style={{ background: '#fef2f2', color: '#dc2626', padding: '3px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: '900', border: '1px solid #fca5a5' }}>
-                          ⚠️ Overstay Active
-                        </span>
-                      )}
-                    </div>
-                  </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #cbd5e1', paddingTop: '12px', marginTop: 'auto' }}>
-                    <div>
-                      <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '800', textTransform: 'uppercase', display: 'block' }}>Last Receipt</span>
-                      <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-main)' }}>{tenant.lastPaymentDate}</span>
+                      {/* Financial Blocks */}
+                      <div style={{ display: 'flex', gap: '12px' }}>
+                        <div style={{ flex: 1, background: '#f8fafc', padding: '12px 16px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                          <span style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>Expected Rent</span>
+                          <span style={{ fontSize: '16px', fontWeight: '900', fontFamily: 'monospace', color: 'var(--text-main)' }}>₵{tenant.monthlyRent.toLocaleString()}</span>
+                        </div>
+                        <div style={{ flex: 1, background: '#f8fafc', padding: '12px 16px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                          <span style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>Escrow Deposit</span>
+                          <span style={{ fontSize: '16px', fontWeight: '900', fontFamily: 'monospace', color: '#00875a' }}>₵{tenant.securityDeposit.toLocaleString()}</span>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '12px' }}>
+                        <div style={{ flex: 1, background: '#ecfdf5', padding: '12px 16px', borderRadius: '16px', border: '1px solid #a7f3d0' }}>
+                          <span style={{ fontSize: '10px', fontWeight: '800', color: '#047857', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>Collected</span>
+                          <span style={{ fontSize: '16px', fontWeight: '900', fontFamily: 'monospace', color: '#065f46' }}>₵{tenantTotalCollected.toLocaleString()}</span>
+                        </div>
+                        <div style={{ flex: 1, background: tenantOutstanding > 0 ? '#fee2e2' : '#f8fafc', padding: '12px 16px', borderRadius: '16px', border: tenantOutstanding > 0 ? '1px solid #fca5a5' : '1px solid #e2e8f0' }}>
+                          <span style={{ fontSize: '10px', fontWeight: '800', color: tenantOutstanding > 0 ? '#b91c1c' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>Arrears</span>
+                          <span style={{ fontSize: '16px', fontWeight: '900', fontFamily: 'monospace', color: tenantOutstanding > 0 ? '#dc2626' : '#059669' }}>
+                            {tenantOutstanding > 0 ? `₵${tenantOutstanding.toLocaleString()}` : '—'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
+                        <button 
+                          onClick={() => setSelectedHistoryTenant(tenant)}
+                          style={{ 
+                            flex: 1,
+                            background: 'white', 
+                            color: '#334155', 
+                            border: '1px solid #cbd5e1', 
+                            padding: '10px', 
+                            borderRadius: '12px', 
+                            fontSize: '12px', 
+                            fontWeight: '800', 
+                            cursor: 'pointer', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            gap: '6px',
+                            transition: '0.2s'
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.borderColor = '#94a3b8'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
+                        >
+                          <History size={14} style={{ color: 'var(--primary)' }} /> Audit Ledger
+                        </button>
+                        <button 
+                          onClick={() => { setPaymentTenant(tenant); setPaymentAmount(tenant.monthlyRent); setShowLogPaymentModal(true); }}
+                          style={{ 
+                            flex: 1,
+                            background: leaseInfo.isOverdue ? '#ef4444' : '#10b981', 
+                            color: 'white', 
+                            border: 'none', 
+                            padding: '10px', 
+                            borderRadius: '12px', 
+                            fontSize: '12px', 
+                            fontWeight: '800', 
+                            cursor: 'pointer', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            gap: '6px',
+                            transition: '0.2s',
+                            boxShadow: leaseInfo.isOverdue ? '0 4px 12px rgba(239, 68, 68, 0.2)' : '0 4px 12px rgba(16, 185, 129, 0.2)'
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.filter = 'brightness(1.1)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                          onMouseLeave={e => { e.currentTarget.style.filter = 'brightness(1)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                        >
+                          <DollarSign size={14} /> Record Payment
+                        </button>
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button 
-                        onClick={() => setSelectedHistoryTenant(tenant)}
-                        title="Audit Payment History"
-                        style={{ background: 'white', color: '#334155', border: '1px solid #cbd5e1', padding: '8px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: '0.2s' }}
-                        onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.borderColor = '#94a3b8'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
-                      >
-                        <History size={14} style={{ color: 'var(--primary)' }} /> History
-                      </button>
-                      <button 
-                        onClick={() => { setPaymentTenant(tenant); setPaymentAmount(tenant.monthlyRent); setShowLogPaymentModal(true); }}
-                        style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '8px 14px', borderRadius: '12px', fontSize: '12px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 10px rgba(0,135,90,0.2)' }}
-                      >
-                        <DollarSign size={14} /> Log Receipt
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       )}

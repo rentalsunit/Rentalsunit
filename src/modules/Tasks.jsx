@@ -4,11 +4,23 @@ import {
   CheckSquare, CheckCircle2, Clock, Calendar, Users, Plus, Search, 
   Filter, AlertCircle, User, ArrowRight, Building, Play, X, Award, FileText, Key
 } from 'lucide-react';
-import { getStoredStaffTasks, saveStoredStaffTasks, getStoredStaffEmployees } from '../lib/masterData';
+import { getStoredStaffTasks, saveStoredStaffTasks, getStoredStaffEmployees, getStoredRoles, resolveRoleName } from '../lib/masterData';
 
 const Tasks = () => {
   const [tasks, setTasks] = useState(() => {
     return getStoredStaffTasks();
+  });
+
+  const [userProfile, setUserProfile] = useState(() => {
+    const saved = localStorage.getItem('realtyos_user_profile');
+    let parsed = null;
+    if (saved) {
+      try { parsed = JSON.parse(saved); } catch(e) {}
+    }
+    return {
+      name: parsed?.name || 'Louis Kemenyo',
+      role: parsed?.role || 'Portfolio Director'
+    };
   });
 
   // Sync state when coming back from other modules or periodically
@@ -75,7 +87,20 @@ const Tasks = () => {
   };
 
   const filteredTasks = useMemo(() => {
+    const roles = getStoredRoles();
+    const roleDef = roles.find(r => r.name.toLowerCase() === resolveRoleName(userProfile.role || '').toLowerCase());
+    const hasOmniView = roleDef && roleDef.permissions && (
+      roleDef.permissions.includes('Executive Dashboard & Analytics') || 
+      roleDef.permissions.includes('System Parameters & RBAC Admin') || 
+      roleDef.permissions.includes('HR Staff Directory & Payroll Runs')
+    );
+
     return tasks.filter(t => {
+      // Privacy Check: Hide unassigned tasks from low-level employees
+      if (!hasOmniView && t.assignedTo.toLowerCase() !== userProfile.name.toLowerCase()) {
+        return false;
+      }
+
       const matchesSearch = t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             t.property.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             t.assignedTo.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -84,7 +109,7 @@ const Tasks = () => {
       const matchesStatus = filterStatus === 'all' || t.status.toLowerCase().includes(filterStatus.toLowerCase());
       return matchesSearch && matchesPriority && matchesStatus;
     });
-  }, [tasks, searchTerm, filterPriority, filterStatus]);
+  }, [tasks, searchTerm, filterPriority, filterStatus, userProfile.name, userProfile.role]);
 
   const metrics = useMemo(() => {
     const total = tasks.length;

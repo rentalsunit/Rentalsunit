@@ -5,11 +5,23 @@ import {
   CheckCircle2, AlertCircle, ShieldCheck, HardHat, FileCode, Archive, 
   UploadCloud, FileSpreadsheet, Lock, X, RefreshCw, Key
 } from 'lucide-react';
-import { getStoredVaultDocuments, saveStoredVaultDocuments } from '../lib/masterData';
+import { getStoredVaultDocuments, saveStoredVaultDocuments, getStoredRoles, resolveRoleName } from '../lib/masterData';
 
 const Documents = () => {
   const [documents, setDocuments] = useState(() => {
     return getStoredVaultDocuments();
+  });
+
+  const [userProfile, setUserProfile] = useState(() => {
+    const saved = localStorage.getItem('realtyos_user_profile');
+    let parsed = null;
+    if (saved) {
+      try { parsed = JSON.parse(saved); } catch(e) {}
+    }
+    return {
+      name: parsed?.name || 'Louis Kemenyo',
+      role: parsed?.role || 'Portfolio Director'
+    };
   });
 
   // Sync state when coming back from other modules or periodically
@@ -74,7 +86,20 @@ const Documents = () => {
   };
 
   const filteredDocs = useMemo(() => {
+    const roles = getStoredRoles();
+    const roleDef = roles.find(r => r.name.toLowerCase() === resolveRoleName(userProfile.role || '').toLowerCase());
+    const hasOmniView = roleDef && roleDef.permissions && (
+      roleDef.permissions.includes('Executive Dashboard & Analytics') || 
+      roleDef.permissions.includes('System Parameters & RBAC Admin') || 
+      roleDef.permissions.includes('HR Staff Directory & Payroll Runs')
+    );
+
     return documents.filter(d => {
+      // Document Clearance Privacy Check
+      if (!hasOmniView && (d.security.includes('Level 3') || d.security.includes('Level 4'))) {
+        return false;
+      }
+
       const matchesSearch = d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             d.property.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             d.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -82,7 +107,7 @@ const Documents = () => {
       const matchesCategory = filterCategory === 'all' || d.category.toLowerCase() === filterCategory.toLowerCase();
       return matchesSearch && matchesCategory;
     });
-  }, [documents, searchTerm, filterCategory]);
+  }, [documents, searchTerm, filterCategory, userProfile.role]);
 
   const metrics = useMemo(() => {
     const totalCount = documents.length;

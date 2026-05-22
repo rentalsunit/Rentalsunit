@@ -5,13 +5,13 @@ const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 const supabase = createClient(url, anonKey);
 
 async function query() {
-  const { data, error } = await supabase.from('users').select('*');
+  const { data, error } = await supabase.from('users').select('id, name, username, role, department');
   if (error) {
     console.error("Error:", error);
   } else {
-    console.log("Current users in Supabase users table:");
+    console.log("Users Summary:");
     data.forEach(u => {
-      console.log(`- ID: ${u.id}, Name: ${u.name}, Username: ${u.username}, Role: ${u.role}, Email: ${u.email}`);
+      console.log(`- ID: ${u.id}, Name: ${u.name}, Username: ${u.username}, Role: ${u.role}, Dept: ${u.department}`);
     });
   }
 }

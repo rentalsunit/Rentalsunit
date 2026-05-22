@@ -69,6 +69,18 @@ const Login = ({ onLogin }) => {
     }
   };
 
+  const handleResetToLogin = () => {
+    setView('login');
+    setFpUsername('');
+    setFpAnswer('');
+    setFpAttemptsLeft(3);
+    setFpFoundAccount(null);
+    setFpTempPassword('');
+    setFpError('');
+    setFpCopied(false);
+    setLockoutCountdown(5);
+  };
+
   // Auto-countdown and redirect when locked out
   useEffect(() => {
     if (view !== 'locked_out') return;
@@ -85,18 +97,6 @@ const Login = ({ onLogin }) => {
     }, 1000);
     return () => clearInterval(interval);
   }, [view]);
-
-  const handleResetToLogin = () => {
-    setView('login');
-    setFpUsername('');
-    setFpAnswer('');
-    setFpAttemptsLeft(3);
-    setFpFoundAccount(null);
-    setFpTempPassword('');
-    setFpError('');
-    setFpCopied(false);
-    setLockoutCountdown(5);
-  };
 
   const handleFpLookupSubmit = (e) => {
     e.preventDefault();

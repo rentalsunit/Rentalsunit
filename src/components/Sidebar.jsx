@@ -5,6 +5,7 @@ import {
   CreditCard, Wrench, Users2, ShieldCheck, Settings, 
   UserCheck, BarChart3, LogOut
 } from 'lucide-react';
+import { getStoredRoles, resolveRoleName } from '../lib/masterData';
 
 const Sidebar = ({ activeCategory, setActiveCategory, setActiveTab }) => {
   const [userProfile, setUserProfile] = useState(() => {
@@ -42,8 +43,55 @@ const Sidebar = ({ activeCategory, setActiveCategory, setActiveTab }) => {
     };
   }, []);
 
+  const roles = getStoredRoles();
+  const roleDef = roles.find(r => r.name.toLowerCase() === resolveRoleName(userProfile?.role || '').toLowerCase());
+  const perms = roleDef?.permissions || [];
+  
+  const hasOmni = perms.includes('Executive Dashboard & Analytics');
+  const hasHR = perms.includes('HR Staff Directory & Payroll Runs');
+  const hasFinance = perms.includes('General Ledger & Fiscal Accounting');
+  const hasSettings = perms.includes('System Parameters & RBAC Admin');
+  const hasMaintenance = perms.includes('Maintenance Dispatch & Tickets');
+
+  let overviewLabel = 'System Overview';
+  let overviewTab = 'dashboard';
+  
+  const isHR = userProfile?.role?.toLowerCase().includes('hr') || resolveRoleName(userProfile?.role || '').toLowerCase().includes('hr');
+  
+  if (isHR) {
+    overviewLabel = 'HR Overview';
+    overviewTab = 'hr';
+  } else if (hasOmni) {
+    overviewLabel = 'Executive Overview';
+    overviewTab = 'dashboard';
+  } else if (hasHR && !hasFinance) {
+    overviewLabel = 'HR Overview';
+    overviewTab = 'hr';
+  } else if (hasFinance && !hasHR) {
+    overviewLabel = 'Finance Overview';
+    overviewTab = 'finance-ledger';
+  } else if (hasHR && hasFinance) {
+    overviewLabel = 'Department Overview';
+    overviewTab = 'finance-ledger';
+  } else if (hasSettings) {
+    overviewLabel = 'System Admin';
+    overviewTab = 'settings';
+  } else if (hasMaintenance) {
+    overviewLabel = 'Operations Hub';
+    overviewTab = 'maintenance';
+  } else {
+    // Default fallback if they have minimal permissions
+    overviewLabel = 'My Dashboard';
+    // We could leave it as dashboard and just clear out the stats, but let's send them to what they have access to.
+    const firstCat = roleDef?.permissions?.length > 0 ? roleDef.permissions[0] : null;
+    if (firstCat && firstCat.includes('Rental')) overviewTab = 'rental-properties';
+    else if (firstCat && firstCat.includes('Sales')) overviewTab = 'sales-properties';
+    else if (firstCat && firstCat.includes('Tenant')) overviewTab = 'tenants';
+    else overviewTab = 'dashboard'; 
+  }
+
   const menuItems = [
-    { id: 'overview', label: 'Executive Overview', icon: LayoutDashboard, defaultTab: 'dashboard' },
+    { id: 'overview', label: overviewLabel, icon: LayoutDashboard, defaultTab: overviewTab },
     { id: 'reports-category', label: 'Intelligence Reports', icon: BarChart3, defaultTab: 'reports' },
     { id: 'rental', label: 'Rental Apartments', icon: Building2, defaultTab: 'rental-properties' },
     { id: 'sales', label: 'Sales & Purchases', icon: Tag, defaultTab: 'sales-properties' },
@@ -55,51 +103,60 @@ const Sidebar = ({ activeCategory, setActiveCategory, setActiveTab }) => {
     { id: 'management', label: 'Management', icon: Settings, defaultTab: 'settings' }
   ];
 
-  const getAuthorizedCategories = (role) => {
-    const r = (role || '').toLowerCase();
-    if (r.includes('admin') || r.includes('director') || r.includes('md') || r.includes('architect') || r.includes('master')) {
-      return ['overview', 'reports-category', 'rental', 'sales', 'marketing', 'finance', 'operations', 'human-resources', 'tenants-category', 'management'];
+  const getAuthorizedCategories = (roleName) => {
+    // Always grant overview access as a baseline landing page
+    const authorized = new Set(['overview']);
+    
+    if (roleDef && roleDef.permissions) {
+      if (roleDef.permissions.includes('Executive Dashboard & Analytics')) {
+        authorized.add('reports-category');
+      }
+      if (roleDef.permissions.includes('Rental Properties & Units')) {
+        authorized.add('rental');
+      }
+      if (roleDef.permissions.includes('Sales Pipeline & CRM Directory')) {
+        authorized.add('sales');
+        authorized.add('marketing');
+      }
+      if (roleDef.permissions.includes('Tenant Register & Resident KYC')) {
+        authorized.add('tenants-category');
+      }
+      if (roleDef.permissions.includes('General Ledger & Fiscal Accounting') || roleDef.permissions.includes('Rent Escrow & Security Deposits')) {
+        authorized.add('finance');
+      }
+      if (roleDef.permissions.includes('Maintenance Dispatch & Tickets')) {
+        authorized.add('operations');
+      }
+      if (roleDef.permissions.includes('HR Staff Directory & Payroll Runs')) {
+        authorized.add('human-resources');
+      }
+      if (roleDef.permissions.includes('System Parameters & RBAC Admin') || roleDef.permissions.includes('Database Snapshots & Cloud Recovery')) {
+        authorized.add('management');
+      }
     }
-    if (r.includes('manager') || r.includes('leasing')) {
-      return ['overview', 'rental', 'tenants-category', 'operations', 'reports-category'];
-    }
-    if (r.includes('engineer') || r.includes('facility') || r.includes('maintenance')) {
-      return ['overview', 'operations'];
-    }
-    if (r.includes('finance') || r.includes('controller') || r.includes('cfo') || r.includes('auditor') || r.includes('accountant')) {
-      return ['overview', 'reports-category', 'finance', 'rental', 'sales'];
-    }
-    if (r.includes('hr') || r.includes('human')) {
-      return ['overview', 'human-resources'];
-    }
-    if (r.includes('sales') || r.includes('marketing')) {
-      return ['overview', 'sales', 'marketing'];
-    }
-    return ['overview', 'rental', 'tenants-category', 'operations'];
+    
+    return Array.from(authorized);
   };
 
   useEffect(() => {
     const authorized = getAuthorizedCategories(userProfile?.role);
     if (!authorized.includes(activeCategory)) {
       if (authorized.length > 0) {
-        const firstCat = authorized[0];
-        const defaultTabMap = {
-          overview: 'dashboard',
-          'reports-category': 'reports',
-          rental: 'rental-properties',
-          sales: 'sales-properties',
-          marketing: 'sales',
-          finance: 'finance-ledger',
-          operations: 'maintenance',
-          'human-resources': 'hr',
-          'tenants-category': 'tenants',
-          management: 'settings'
-        };
-        setActiveCategory(firstCat);
-        setActiveTab(defaultTabMap[firstCat] || 'dashboard');
+        setActiveCategory(authorized[0]);
+        // Also update the activeTab to match the fallback category
+        const fallbackItem = menuItems.find(m => m.id === authorized[0]);
+        if (fallbackItem) {
+          setActiveTab(fallbackItem.defaultTab);
+        }
+      }
+    } else {
+      // If activeCategory is 'overview', but the user doesn't have dashboard access,
+      // we need to ensure the activeTab correctly aligns with their dynamic overviewTab
+      if (activeCategory === 'overview') {
+         setActiveTab(overviewTab);
       }
     }
-  }, [userProfile?.role, activeCategory, setActiveCategory, setActiveTab]);
+  }, [userProfile, activeCategory]);
 
   const handleCategoryClick = (id, defaultTab) => {
     setActiveCategory(id);

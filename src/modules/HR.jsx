@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, UserPlus, Clock, ShieldCheck, DollarSign, Award, AlertTriangle,
@@ -17,7 +17,9 @@ import {
   getStoredStaffLoans, saveStoredStaffLoans,
   getStoredStaffPayroll, saveStoredStaffPayroll,
   getStoredStaffSanctions, saveStoredStaffSanctions,
-  getStoredStaffAppraisals, saveStoredStaffAppraisals
+  getStoredStaffAppraisals, saveStoredStaffAppraisals,
+  getStoredFinancialVouchers, saveStoredFinancialVouchers,
+  getStoredUsers, saveStoredUsers
 } from '../lib/masterData';
 
 const HR = () => {
@@ -268,7 +270,7 @@ const HR = () => {
           employeeId: emp.id,
           name: emp.name,
           dept: emp.dept,
-          status: 'ðŸ–ï¸ Approved Leave',
+          status: 'Approved Leave',
           clockIn: '--:-- --',
           clockOut: '--:-- --',
           location: 'On Approved Leave',
@@ -280,7 +282,7 @@ const HR = () => {
         employeeId: emp.id,
         name: emp.name,
         dept: emp.dept,
-        status: 'ðŸŸ¢ Present (On Time)',
+        status: 'Present (On Time)',
         clockIn: '08:00 AM',
         clockOut: '05:00 PM',
         location: 'HQ Corporate Plaza',
@@ -296,10 +298,10 @@ const HR = () => {
     const updated = [...dailyCheckRoster];
     updated[index][field] = val;
     if (field === 'status') {
-      if (val === 'ðŸ”´ Unexcused Absent') {
+      if (val === 'Unexcused Absent') {
         updated[index].clockIn = '--:-- --';
         updated[index].clockOut = '--:-- --';
-      } else if (val === 'ðŸŸ¡ Present (Late)') {
+      } else if (val === 'Present (Late)') {
         updated[index].clockIn = '08:45 AM';
       }
     }
@@ -333,10 +335,10 @@ const HR = () => {
       let a = emp.daysAbsent;
       let lv = emp.daysOnLeave;
 
-      if (recordedItem.status === 'ðŸŸ¢ Present (On Time)') p += 1;
-      else if (recordedItem.status === 'ðŸŸ¡ Present (Late)') { p += 1; l += 1; }
-      else if (recordedItem.status === 'ðŸ”´ Unexcused Absent') a += 1;
-      else if (recordedItem.status === 'ðŸ–ï¸ Approved Leave') lv += 1;
+      if (recordedItem.status === 'Present (On Time)') p += 1;
+      else if (recordedItem.status === 'Present (Late)') { p += 1; l += 1; }
+      else if (recordedItem.status === 'Unexcused Absent') a += 1;
+      else if (recordedItem.status === 'Approved Leave') lv += 1;
 
       const totalDays = p + a + lv;
       const rate = totalDays > 0 ? Math.round(((p + lv) / totalDays) * 100) + '%' : '100%';
@@ -355,9 +357,7 @@ const HR = () => {
   };
 
   const calculatedTotalGross = useMemo(() => {
-    return staffList
-      .filter(emp => emp.dept !== 'Executive Management' && emp.role !== 'Portfolio Director')
-      .reduce((sum, emp) => sum + emp.salary, 0);
+    return staffList.reduce((sum, emp) => sum + (Number(emp.salary) || 0), 0);
   }, [staffList]);
 
   const activeLoanDeductionsTotal = useMemo(() => {
@@ -396,7 +396,7 @@ const HR = () => {
       email: formData.get('email'),
       phone: formData.get('phone'),
       salary: numSalary,
-      formattedSalary: `â‚µ ${numSalary.toLocaleString()} / mo`,
+      formattedSalary: `₵ ${numSalary.toLocaleString()} / mo`,
       contract: formData.get('contract'),
       status: 'Active',
       joined: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
@@ -456,11 +456,11 @@ const HR = () => {
       monthYear: monthYear,
       totalStaff: staffList.filter(emp => emp.dept !== 'Executive Management' && emp.role !== 'Portfolio Director').length,
       grossAmount: calculatedTotalGross,
-      formattedGross: `â‚µ ${calculatedTotalGross.toLocaleString()}`,
+      formattedGross: `₵ ${calculatedTotalGross.toLocaleString()}`,
       loanDeductions: activeLoanDeductionsTotal,
-      formattedDeductions: `-â‚µ ${activeLoanDeductionsTotal.toLocaleString()}`,
+      formattedDeductions: `-₵ ${activeLoanDeductionsTotal.toLocaleString()}`,
       netAmount: calculatedNetDisbursement,
-      formattedNet: `â‚µ ${calculatedNetDisbursement.toLocaleString()}`,
+      formattedNet: `₵ ${calculatedNetDisbursement.toLocaleString()}`,
       status: 'Pending Finance Sign-off',
       runDate: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
       runBy: 'Finance Director'
@@ -469,8 +469,31 @@ const HR = () => {
     const updatedPayroll = [newRun, ...payrollRunsList];
     setPayrollRunsList(updatedPayroll);
     saveStoredStaffPayroll(updatedPayroll);
+
+    // Push to Finance
+    const vouchers = getStoredFinancialVouchers();
+    const newVoucher = {
+      id: `TRX-${5000 + vouchers.length + 1}`,
+      type: 'Expense',
+      source: 'Payroll',
+      property: 'Corporate HQ & General',
+      category: `Monthly Staff Salary - ${monthYear}`,
+      amount: calculatedNetDisbursement,
+      formattedAmount: `₵ ${calculatedNetDisbursement.toLocaleString()}`,
+      date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+      status: 'Pending',
+      officer: 'System Auto-Task',
+      payerRecipient: 'All Staff',
+      paymentMethod: 'Bank Transfer',
+      refNo: newRun.id,
+      notes: `Payroll for ${monthYear}. Total Staff: ${newRun.totalStaff}. Pending Finance sign-off.`
+    };
+    saveStoredFinancialVouchers([newVoucher, ...vouchers]);
+    // Dispatch an event to update Finance immediately if open
+    window.dispatchEvent(new Event('realtyos_finance_update'));
+
     setShowPayrollModal(false);
-    setSuccessMsg(`Payroll run for ${monthYear} calculated (Net: â‚µ${calculatedNetDisbursement.toLocaleString()}) and submitted to Finance for audit.`);
+    setSuccessMsg(`Payroll run for ${monthYear} calculated (Net: ₵ ${calculatedNetDisbursement.toLocaleString()}) and submitted to Finance for audit.`);
     setTimeout(() => setSuccessMsg(''), 4500);
   };
 
@@ -485,7 +508,7 @@ const HR = () => {
         return {
           ...loan,
           remainingBal: newBal,
-          formattedBal: `â‚µ ${newBal.toLocaleString()}`,
+          formattedBal: `₵ ${newBal.toLocaleString()}`,
           status: newBal === 0 ? 'Fully Repaid' : 'Active Amortization'
         };
       }
@@ -519,13 +542,13 @@ const HR = () => {
       id: `LN-${700 + loansList.length + 1}`,
       employee: formData.get('employee'),
       principal: principal,
-      formattedPrincipal: `â‚µ ${principal.toLocaleString()}`,
+      formattedPrincipal: `₵ ${principal.toLocaleString()}`,
       term: `${term} Months`,
       interestRate: `${interest}%`,
       monthlyInstallmentNum: monthlyInstallmentNum,
-      monthlyInstallment: `â‚µ ${monthlyInstallmentNum.toLocaleString()} / mo`,
+      monthlyInstallment: `₵ ${monthlyInstallmentNum.toLocaleString()} / mo`,
       remainingBal: principal,
-      formattedBal: `â‚µ ${principal.toLocaleString()}`,
+      formattedBal: `₵ ${principal.toLocaleString()}`,
       guarantor: formData.get('guarantor'),
       purpose: formData.get('purpose'),
       status: 'Pending Underwriting',
@@ -534,8 +557,30 @@ const HR = () => {
     const updatedLoans = [newLoan, ...loansList];
     setLoansList(updatedLoans);
     saveStoredStaffLoans(updatedLoans);
+
+    // Push to Finance
+    const vouchers = getStoredFinancialVouchers();
+    const newVoucher = {
+      id: `TRX-${5000 + vouchers.length + 1}`,
+      type: 'Expense',
+      source: 'Payroll',
+      property: 'Corporate HQ & General',
+      category: `Staff Loan - ${newLoan.employee}`,
+      amount: principal,
+      formattedAmount: `₵ ${principal.toLocaleString()}`,
+      date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+      status: 'Pending',
+      officer: 'System Auto-Task',
+      payerRecipient: newLoan.employee,
+      paymentMethod: 'Bank Transfer',
+      refNo: newLoan.id,
+      notes: `Loan Request. Term: ${term} months. Interest: ${interest}%. Pending Underwriting.`
+    };
+    saveStoredFinancialVouchers([newVoucher, ...vouchers]);
+    window.dispatchEvent(new Event('realtyos_finance_update'));
+
     setShowLoanModal(false);
-    setSuccessMsg(`Staff loan request for ${newLoan.employee} logged for underwriting audit.`);
+    setSuccessMsg(`Staff loan request for ${newLoan.employee} logged and pushed to Finance for underwriting audit.`);
     setTimeout(() => setSuccessMsg(''), 4000);
   };
 
@@ -614,7 +659,7 @@ const HR = () => {
       email: editEmpEmail,
       phone: editEmpPhone,
       salary: parseFloat(editEmpSalary) || 0,
-      formattedSalary: `â‚µ ${parseFloat(editEmpSalary).toLocaleString()} / mo`,
+      formattedSalary: `₵ ${parseFloat(editEmpSalary).toLocaleString()} / mo`,
       bankName: editEmpBankName,
       bankAccNo: editEmpBankAccNo,
       bankAccName: editEmpName, // acc name matches name by default
@@ -637,15 +682,46 @@ const HR = () => {
     const userToTerminate = staffList.find(u => u.id === userId);
     if (!userToTerminate) return;
 
-    const confirmed = window.confirm(`âš ï¸ ARE YOU ABSOLUTELY SURE?\nThis will permanently delete/terminate employee record for "${userToTerminate.name}" (${userId}). This action cannot be undone and will immediately revoke all access.`);
+    const confirmed = window.confirm(`⚠️ ARE YOU ABSOLUTELY SURE?\nThis will permanently delete/terminate employee record for "${userToTerminate.name}" (${userId}). This action cannot be undone and will immediately revoke all access.`);
     if (!confirmed) return;
 
+    const empName = userToTerminate.name;
+    const empId = userToTerminate.id;
+
+    // Cascade delete from staffList
     const updatedList = staffList.filter(u => u.id !== userId);
     setStaffList(updatedList);
     saveStoredStaffEmployees(updatedList);
+
+    // Cascade delete from child tables in both state and stored tables
+    const cleanLeaves = leavesList.filter(l => l.employee !== empName && l.employeeId !== empId);
+    setLeavesList(cleanLeaves);
+    saveStoredStaffLeaves(cleanLeaves);
+
+    const cleanLoans = loansList.filter(l => l.employee !== empName && l.employeeId !== empId);
+    setLoansList(cleanLoans);
+    saveStoredStaffLoans(cleanLoans);
+
+    const cleanAttendance = attendanceLogsList.filter(a => a.employee !== empName && a.employeeId !== empId);
+    setAttendanceLogsList(cleanAttendance);
+    saveStoredStaffAttendance(cleanAttendance);
+
+    const cleanSanctions = sanctionsList.filter(s => s.employee !== empName && s.employeeId !== empId);
+    setSanctionsList(cleanSanctions);
+    saveStoredStaffSanctions(cleanSanctions);
+
+    const cleanAppraisals = appraisalsList.filter(a => a.employee !== empName && a.employeeId !== empId);
+    setAppraisalsList(cleanAppraisals);
+    saveStoredStaffAppraisals(cleanAppraisals);
+
+    // Revoke user credentials in users list
+    const allUsers = getStoredUsers();
+    const cleanUsers = allUsers.filter(u => u.id !== empId && u.name !== empName);
+    saveStoredUsers(cleanUsers);
+
     setSelectedStaffProfile(null);
     setIsEditingProfile(false);
-    setSuccessMsg(`Employee record for ${userToTerminate.name} has been permanently terminated and deleted.`);
+    setSuccessMsg(`Employee record for ${userToTerminate.name} and all related credentials/ledgers have been permanently deleted.`);
     setTimeout(() => setSuccessMsg(''), 4500);
   };
 
@@ -693,10 +769,18 @@ const HR = () => {
   }, [filteredAttendanceLogs]);
 
   const metrics = useMemo(() => {
-    const activeStaff = staffList.filter(emp => emp.dept !== 'Executive Management' && emp.role !== 'Portfolio Director').length;
-    const outstandingLoans = loansList.filter(l => l.status.includes('Active')).reduce((acc, l) => acc + l.remainingBal, 0);
-    return { activeStaff, outstandingLoans };
-  }, [staffList, loansList]);
+    const totalStaff = staffList.length;
+    const uniqueDepts = new Set(staffList.map(emp => emp.dept)).size;
+    const outstandingLoans = loansList.reduce((acc, l) => acc + (l.remainingBal || 0), 0);
+    const onLeaveCount = leavesList.filter(l => l.status === 'Approved').length;
+    
+    let attendanceRate = "--%";
+    if (attendanceDateStats.total > 0) {
+      attendanceRate = ((attendanceDateStats.present / attendanceDateStats.total) * 100).toFixed(1) + "%";
+    }
+    
+    return { totalStaff, uniqueDepts, outstandingLoans, onLeaveCount, attendanceRate };
+  }, [staffList, loansList, leavesList, attendanceDateStats]);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -791,9 +875,9 @@ const HR = () => {
           <div style={{ overflow: 'hidden' }}>
             <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>Total Workforce</p>
             <h3 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-main)', marginTop: '4px' }}>
-              {metrics.activeStaff} Staff
+              {metrics.totalStaff} Staff
             </h3>
-            <span style={{ fontSize: '12px', color: '#10b981', fontWeight: '700', whiteSpace: 'nowrap' }}>Across 4 core departments</span>
+            <span style={{ fontSize: '12px', color: '#10b981', fontWeight: '700', whiteSpace: 'nowrap' }}>Across {metrics.uniqueDepts} core departments</span>
           </div>
         </div>
 
@@ -804,7 +888,7 @@ const HR = () => {
           <div style={{ overflow: 'hidden' }}>
             <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>Gross Monthly Payroll</p>
             <h3 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-main)', marginTop: '4px' }}>
-              â‚µ {(calculatedTotalGross / 1000).toFixed(1)}k <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-muted)' }}>/ mo</span>
+              ₵ {(calculatedTotalGross / 1000).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-muted)' }}>/ mo</span>
             </h3>
             <span style={{ fontSize: '12px', color: '#4338ca', fontWeight: '700', whiteSpace: 'nowrap' }}>Dynamic gross calculation</span>
           </div>
@@ -817,9 +901,22 @@ const HR = () => {
           <div style={{ overflow: 'hidden' }}>
             <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>Amortized Staff Loans</p>
             <h3 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-main)', marginTop: '4px' }}>
-              â‚µ {(metrics.outstandingLoans / 1000).toLocaleString()}k
+              ₵ {(metrics.outstandingLoans / 1000).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k
             </h3>
             <span style={{ fontSize: '12px', color: '#d97706', fontWeight: '700', whiteSpace: 'nowrap' }}>Medium & long term credit</span>
+          </div>
+        </div>
+
+        <div className="glass-card-premium" style={{ padding: '24px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Coffee size={28} />
+          </div>
+          <div style={{ overflow: 'hidden' }}>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>Staff On Leave</p>
+            <h3 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-main)', marginTop: '4px' }}>
+              {metrics.onLeaveCount} Staff
+            </h3>
+            <span style={{ fontSize: '12px', color: '#2563eb', fontWeight: '700', whiteSpace: 'nowrap' }}>Approved rest periods</span>
           </div>
         </div>
 
@@ -830,7 +927,7 @@ const HR = () => {
           <div style={{ overflow: 'hidden' }}>
             <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>Attendance Rate</p>
             <h3 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-main)', marginTop: '4px' }}>
-              96.4%
+              {metrics.attendanceRate}
             </h3>
             <span style={{ fontSize: '12px', color: '#ef4444', fontWeight: '700', whiteSpace: 'nowrap' }}>Checked in today</span>
           </div>
@@ -841,13 +938,13 @@ const HR = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: 'white', padding: '12px 24px', borderRadius: '20px', border: '1px solid var(--border-dark)', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.03)', width: '100%' }}>
         <nav style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', width: '100%' }}>
           {[
-            { id: 'directory', label: 'ðŸ‘¨â€ðŸ’¼ Staff Registry & ID Badges' },
-            { id: 'attendance', label: 'â±ï¸ Daily Attendance Logs' },
-            { id: 'leaves', label: 'ðŸ–ï¸ Leave & Vacation Vault' },
-            { id: 'payroll', label: 'ðŸ’³ Monthly Payroll Run' },
-            { id: 'loans', label: 'ðŸ¦ Staff Loans Ledger' },
-            { id: 'sanctions', label: 'âš–ï¸ Sanctions Registry' },
-            { id: 'appraisals', label: 'â­ Performance Appraisals' }
+            { id: 'directory', label: '👤 Staff Registry & ID Badges' },
+            { id: 'attendance', label: '📋 Daily Attendance Logs' },
+            { id: 'leaves', label: '🏖️ Leave & Vacation Vault' },
+            { id: 'payroll', label: '💰 Monthly Payroll Run' },
+            { id: 'loans', label: '🏦 Staff Loans Ledger' },
+            { id: 'sanctions', label: '⚠️ Sanctions Registry' },
+            { id: 'appraisals', label: '⭐ Performance Appraisals' }
           ].map(tab => (
             <button
               key={tab.id}
@@ -1344,7 +1441,7 @@ const HR = () => {
                   <motion.tr key={pay.id} variants={itemVariants} style={{ borderBottom: '1px solid var(--border-dark)', background: idx % 2 === 0 ? 'white' : '#fcfdfd' }}>
                     <td style={{ padding: '18px 24px' }}>
                       <span style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text-main)', display: 'block' }}>{pay.monthYear} Payroll</span>
-                      <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>Ref: {pay.id} â€¢ {pay.runDate}</span>
+                      <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>Ref: {pay.id} • {pay.runDate}</span>
                     </td>
                     <td style={{ padding: '18px 24px', fontSize: '15px', fontWeight: '800', color: 'var(--text-main)' }}>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', background: '#f1f5f9', borderRadius: '8px' }}>
@@ -1375,22 +1472,7 @@ const HR = () => {
                     </td>
                     <td style={{ padding: '18px 24px', textAlign: 'right' }}>
                       {pay.status === 'Pending Finance Sign-off' ? (
-                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                          <button
-                            onClick={() => handleApprovePayroll(pay.id)}
-                            title="Approve & Schedule ACH Payout"
-                            style={{ padding: '8px 14px', borderRadius: '10px', border: 'none', background: '#10b981', color: 'white', fontWeight: '800', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                          >
-                            <Check size={14} /> Approve
-                          </button>
-                          <button
-                            onClick={() => handleRejectPayroll(pay.id)}
-                            title="Reject & Flag for Re-audit"
-                            style={{ padding: '8px 14px', borderRadius: '10px', border: 'none', background: '#ef4444', color: 'white', fontWeight: '800', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                          >
-                            <X size={14} /> Reject
-                          </button>
-                        </div>
+                        <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700' }}>Awaiting Finance</span>
                       ) : (
                         <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700' }}>Audit Complete</span>
                       )}
@@ -1439,7 +1521,7 @@ const HR = () => {
                   <motion.tr key={ln.id} variants={itemVariants} style={{ borderBottom: '1px solid var(--border-dark)', background: idx % 2 === 0 ? 'white' : '#fcfdfd' }}>
                     <td style={{ padding: '18px 24px' }}>
                       <span style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text-main)', display: 'block' }}>{ln.employee}</span>
-                      <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>Ref: {ln.id} â€¢ Disbursed {ln.dateDisbursed}</span>
+                      <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>Ref: {ln.id} • Disbursed {ln.dateDisbursed}</span>
                     </td>
                     <td style={{ padding: '18px 24px', fontSize: '16px', fontWeight: '800', color: 'var(--primary)' }}>
                       {ln.formattedPrincipal}
@@ -1757,7 +1839,7 @@ const HR = () => {
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px' }}>Gross Monthly Compensation (GHS â‚µ)</label>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px' }}>Gross Monthly Compensation (GHS ₵)</label>
                       <input type="number" name="salary" required defaultValue={7500} style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid #cbd5e1', fontSize: '15px', fontWeight: '800', color: '#00875a', outline: 'none', background: '#f8fafc', boxSizing: 'border-box' }} />
                     </div>
                     <div>
@@ -1839,7 +1921,7 @@ const HR = () => {
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', background: '#fff1f2', padding: '24px', borderRadius: '20px', border: '1px solid #fecdd3' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '900', color: '#9f1239', marginBottom: '8px' }}>ðŸš¨ Emergency Contact Name & Relation</label>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '900', color: '#9f1239', marginBottom: '8px' }}>🚨 Emergency Contact Name & Relation</label>
                       <input type="text" name="emergencyName" required placeholder="e.g. Grace Tutu (Wife)" style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid #fca5a5', fontSize: '14px', fontWeight: '700', outline: 'none', background: 'white', boxSizing: 'border-box', color: '#881337' }} />
                     </div>
                     <div>
@@ -2033,7 +2115,7 @@ const HR = () => {
                   {/* Emergency Block at the bottom */}
                   <div style={{ marginTop: '24px', background: '#fff1f2', border: '1px solid #fecdd3', padding: '16px 20px', borderRadius: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', textAlign: 'left' }}>
                     <div>
-                      <span style={{ fontSize: '10px', color: '#e11d48', fontWeight: '900', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>ðŸš¨ IN CASE OF EMERGENCY</span>
+                      <span style={{ fontSize: '10px', color: '#e11d48', fontWeight: '900', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>🚨 IN CASE OF EMERGENCY</span>
                       <span style={{ fontSize: '15px', color: '#881337', fontWeight: '900', marginTop: '2px', display: 'block' }}>{printableTagEmployee.emergencyName || 'HR Support Desk'}</span>
                     </div>
                     <span style={{ fontSize: '13px', color: '#e11d48', fontWeight: '900', background: 'white', padding: '6px 12px', borderRadius: '12px', border: '1px solid #ffe4e6', boxShadow: '0 2px 6px rgba(225,29,72,0.15)', flexShrink: 0 }}>
@@ -2110,14 +2192,14 @@ const HR = () => {
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                       <span style={{ padding: '4px 10px', borderRadius: '20px', backgroundColor: 'var(--primary-glow)', color: 'var(--primary)', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase' }}>
-                        {selectedStaffProfile.id} â€¢ {selectedStaffProfile.status}
+                        {selectedStaffProfile.id} • {selectedStaffProfile.status}
                       </span>
                       <span style={{ fontSize: '14px', fontWeight: '800', color: '#d97706', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Star size={16} fill="#f59e0b" color="#f59e0b" /> {selectedStaffProfile.rating} â­
+                        <Star size={16} fill="#f59e0b" color="#f59e0b" /> {selectedStaffProfile.rating} ⭐
                       </span>
                     </div>
                     <h3 style={{ fontSize: '26px', fontWeight: '800', color: 'var(--text-main)', margin: 0 }}>{selectedStaffProfile.name}</h3>
-                    <p style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: '600', margin: '2px 0 0' }}>{selectedStaffProfile.role} â€¢ {selectedStaffProfile.dept}</p>
+                    <p style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: '600', margin: '2px 0 0' }}>{selectedStaffProfile.role} • {selectedStaffProfile.dept}</p>
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -2225,7 +2307,7 @@ const HR = () => {
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Monthly Salary (â‚µ)</label>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Monthly Salary (₵)</label>
                       <input
                         type="number"
                         required
@@ -2539,15 +2621,15 @@ const HR = () => {
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                     <span style={{ fontSize: '14px', fontWeight: '700' }}>Total Gross Salary:</span>
-                    <span style={{ fontSize: '14px', fontWeight: '800' }}>â‚µ {calculatedTotalGross.toLocaleString()}</span>
+                    <span style={{ fontSize: '14px', fontWeight: '800' }}>₵ {calculatedTotalGross.toLocaleString()}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', color: '#ef4444' }}>
                     <span style={{ fontSize: '14px', fontWeight: '700' }}>Loan Deductions:</span>
-                    <span style={{ fontSize: '14px', fontWeight: '800' }}>- â‚µ {activeLoanDeductionsTotal.toLocaleString()}</span>
+                    <span style={{ fontSize: '14px', fontWeight: '800' }}>- ₵ {activeLoanDeductionsTotal.toLocaleString()}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #cbd5e1', color: 'var(--primary)' }}>
                     <span style={{ fontSize: '16px', fontWeight: '900' }}>Net ACH Payout:</span>
-                    <span style={{ fontSize: '16px', fontWeight: '900' }}>â‚µ {calculatedNetDisbursement.toLocaleString()}</span>
+                    <span style={{ fontSize: '16px', fontWeight: '900' }}>₵ {calculatedNetDisbursement.toLocaleString()}</span>
                   </div>
                 </div>
                 <div>
@@ -2586,7 +2668,7 @@ const HR = () => {
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '8px' }}>Principal Amount (â‚µ)</label>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '8px' }}>Principal Amount (₵)</label>
                     <input type="number" name="principal" required placeholder="e.g. 10000" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc', boxSizing: 'border-box' }} />
                   </div>
                   <div>
@@ -2750,10 +2832,10 @@ const HR = () => {
                               onChange={(e) => handleUpdateRosterRow(idx, 'status', e.target.value)}
                               style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', fontWeight: '700' }}
                             >
-                              <option value="ðŸŸ¢ Present (On Time)">ðŸŸ¢ Present (On Time)</option>
-                              <option value="ðŸŸ¡ Present (Late)">ðŸŸ¡ Present (Late)</option>
-                              <option value="ðŸ”´ Unexcused Absent">ðŸ”´ Unexcused Absent</option>
-                              <option value="ðŸ–ï¸ Approved Leave">ðŸ–ï¸ Approved Leave</option>
+                              <option value="Present (On Time)">Present (On Time)</option>
+                              <option value="Present (Late)">Present (Late)</option>
+                              <option value="Unexcused Absent">Unexcused Absent</option>
+                              <option value="Approved Leave">Approved Leave</option>
                             </select>
                           </td>
                           <td style={{ padding: '12px 24px' }}>

@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { generateRealPDF } from '../lib/pdfService';
 
-import { getStoredUsers, saveStoredUsers, getStoredStaffEmployees, wipeAllMockData } from '../lib/masterData';
+import { getStoredUsers, saveStoredUsers, getStoredStaffEmployees, saveStoredStaffEmployees, wipeAllMockData, getStoredRoles, saveStoredRoles, resolveRoleName } from '../lib/masterData';
 
 const Settings = () => {
   const [activeSection, setActiveSection] = useState('profile');
@@ -221,20 +221,9 @@ const Settings = () => {
   const [localBackupError, setLocalBackupError] = useState('');
 
   // --- RBAC ROLES & PERMISSIONS STATE (Expanded to include IT, HR, Account Officer, Finance, Admin, Sales) ---
-  const [rolesList, setRolesList] = useState([
-    { id: 'ROLE-1', name: 'Executive Administrator', users: 3, permissions: ['Executive Dashboard & Analytics', 'General Ledger & Fiscal Accounting', 'Rent Escrow & Security Deposits', 'System Parameters & RBAC Admin', 'HR Staff Directory & Payroll Runs', 'Lease Agreements & Contracts', 'Rental Properties & Units'] },
-    { id: 'ROLE-2', name: 'Senior Property Manager', users: 8, permissions: ['Rental Properties & Units', 'Lease Agreements & Contracts', 'Tenant Register & Resident KYC', 'Maintenance Dispatch & Tickets', 'Sales Pipeline & CRM Directory'] },
-    { id: 'ROLE-3', name: 'Financial Controller', users: 4, permissions: ['Executive Dashboard & Analytics', 'General Ledger & Fiscal Accounting', 'Rent Escrow & Security Deposits', 'HR Staff Directory & Payroll Runs'] },
-    { id: 'ROLE-4', name: 'Leasing Agent', users: 12, permissions: ['Sales Pipeline & CRM Directory', 'Lease Agreements & Contracts', 'Rental Properties & Units', 'Tenant Register & Resident KYC'] },
-    { id: 'ROLE-5', name: 'Maintenance Dispatcher', users: 6, permissions: ['Maintenance Dispatch & Tickets', 'Rental Properties & Units', 'Tenant Register & Resident KYC'] },
-    { id: 'ROLE-6', name: 'IT Systems Officer', users: 2, permissions: ['System Parameters & RBAC Admin', 'Database Snapshots & Cloud Recovery', 'Executive Dashboard & Analytics'] },
-    { id: 'ROLE-7', name: 'HR Director', users: 2, permissions: ['HR Staff Directory & Payroll Runs', 'Executive Dashboard & Analytics'] },
-    { id: 'ROLE-8', name: 'Account Officer', users: 5, permissions: ['General Ledger & Fiscal Accounting', 'Rent Escrow & Security Deposits'] },
-    { id: 'ROLE-9', name: 'Finance Director', users: 3, permissions: ['Executive Dashboard & Analytics', 'General Ledger & Fiscal Accounting', 'Rent Escrow & Security Deposits', 'HR Staff Directory & Payroll Runs'] },
-    { id: 'ROLE-10', name: 'Administrative Manager', users: 4, permissions: ['Rental Properties & Units', 'Lease Agreements & Contracts', 'Tenant Register & Resident KYC', 'HR Staff Directory & Payroll Runs'] },
-    { id: 'ROLE-11', name: 'Sales Director', users: 3, permissions: ['Sales Pipeline & CRM Directory', 'Executive Dashboard & Analytics', 'Lease Agreements & Contracts', 'Rental Properties & Units'] },
-    { id: 'ROLE-12', name: 'Sales Executive', users: 10, permissions: ['Sales Pipeline & CRM Directory', 'Lease Agreements & Contracts', 'Rental Properties & Units'] }
-  ]);
+  const [rolesList, setRolesList] = useState(() => {
+    return getStoredRoles();
+  });
 
 
   // Available Modules & Capabilities
@@ -249,7 +238,9 @@ const Settings = () => {
     'Maintenance Dispatch & Tickets',
     'HR Staff Directory & Payroll Runs',
     'System Parameters & RBAC Admin',
-    'Database Snapshots & Cloud Recovery'
+    'Database Snapshots & Cloud Recovery',
+    'Corporate & Legal Administration',
+    'System Activities & Audit Log'
   ];
 
   const [editingRole, setEditingRole] = useState(null);
@@ -275,6 +266,9 @@ const Settings = () => {
     const unassigned = enterpriseEmployees.filter(e => !e.hasLogin);
     if (unassigned.length > 0) {
       setSelectedEmpForAccess(unassigned[0].id);
+      if (unassigned[0].role) {
+        setSelectedRoleForAccess(resolveRoleName(unassigned[0].role, rolesList));
+      }
     } else {
       setSelectedEmpForAccess('');
     }
@@ -315,7 +309,9 @@ const Settings = () => {
     const updatedUsers = [newUserCred, ...systemUsers];
     setSystemUsers(updatedUsers);
     saveStoredUsers(updatedUsers);
-    setEnterpriseEmployees(enterpriseEmployees.map(e => e.id === emp.id ? { ...e, hasLogin: true } : e));
+    const updatedEmployees = enterpriseEmployees.map(e => e.id === emp.id ? { ...e, hasLogin: true } : e);
+    setEnterpriseEmployees(updatedEmployees);
+    saveStoredStaffEmployees(updatedEmployees);
     setGeneratedCreds({
       empName: emp.name,
       username: username,
@@ -331,7 +327,9 @@ const Settings = () => {
     const updatedUsers = systemUsers.filter(u => u.id !== userId);
     setSystemUsers(updatedUsers);
     saveStoredUsers(updatedUsers);
-    setEnterpriseEmployees(enterpriseEmployees.map(e => e.id === userId ? { ...e, hasLogin: false } : e));
+    const updatedEmployees = enterpriseEmployees.map(e => e.id === userId ? { ...e, hasLogin: false } : e);
+    setEnterpriseEmployees(updatedEmployees);
+    saveStoredStaffEmployees(updatedEmployees);
     setSuccessMsg(`User access revoked for ${userToRevoke?.name || 'employee'} and active API tokens terminated.`);
     setTimeout(() => setSuccessMsg(''), 4000);
   };
@@ -348,7 +346,9 @@ const Settings = () => {
           status: 'Pending 1st Login',
           isFirstLogin: true,
           tempPassGiven: newTempPass,
-          pass: newTempPass
+          pass: newTempPass,
+          securityQuestion: null,
+          securityAnswer: null
         };
       }
       return u;
@@ -383,7 +383,9 @@ const Settings = () => {
 
   const handleSavePrivilegesUpdate = (e) => {
     e.preventDefault();
-    setRolesList(rolesList.map(r => r.id === editingRole.id ? { ...r, permissions: rolePermissionsTemp } : r));
+    const updatedRoles = rolesList.map(r => r.id === editingRole.id ? { ...r, permissions: rolePermissionsTemp } : r);
+    setRolesList(updatedRoles);
+    saveStoredRoles(updatedRoles);
     const roleTitle = editingRole.name;
     setEditingRole(null);
     setSuccessMsg(`🛡️ Privileges successfully updated for role: ${roleTitle}. Security token rules re-synchronized.`);
@@ -416,7 +418,9 @@ const Settings = () => {
       permissions: [...createRolePerms]
     };
 
-    setRolesList([newCustomRole, ...rolesList]);
+    const updatedRoles = [newCustomRole, ...rolesList];
+    setRolesList(updatedRoles);
+    saveStoredRoles(updatedRoles);
     setCreateRoleName('');
     setCreateRolePerms(['Rental Properties & Units']);
     setShowCreateRoleModal(false);
@@ -638,14 +642,17 @@ const Settings = () => {
     }, 2500);
   };
 
+  const userRoleDef = rolesList.find(r => r.name.toLowerCase() === resolveRoleName(userProfile.role || '', rolesList).toLowerCase());
+  const userPerms = userRoleDef ? userRoleDef.permissions : [];
+
   const sections = [
-    { id: 'profile', label: 'Executive Account', icon: User, desc: 'Manage biometric logins and personal credentials.' },
-    { id: 'organization', label: 'Corporate Profile & Legal TIN', icon: Building2, desc: 'Company legal title, VAT registration, and HQ contact details.' },
-    { id: 'users', label: 'Users & System Permissions', icon: UserCheck, desc: 'Allocate employee login access, temporary passwords, and role privileges.' },
-    { id: 'activity', label: 'System Activities & Audit Log', icon: Activity, desc: 'Immutable tracking of all cross-module data mutations and logins.' },
-    { id: 'rbac', label: 'Role Permissions & Access', icon: Shield, desc: 'Enterprise Role-Based Access Control (RBAC) and user groups.' },
-    { id: 'database', label: 'Database & Cloud Backups', icon: Database, desc: 'Automated daily snapshots, Supabase cluster status, and SQL dumps.' }
-  ];
+    { id: 'profile', label: 'Executive Account', icon: User, desc: 'Manage biometric logins and personal credentials.', show: true },
+    { id: 'organization', label: 'Corporate Profile & Legal TIN', icon: Building2, desc: 'Company legal title, VAT registration, and HQ contact details.', show: userPerms.includes('Corporate & Legal Administration') || userPerms.includes('Executive Dashboard & Analytics') },
+    { id: 'users', label: 'Users & System Permissions', icon: UserCheck, desc: 'Allocate employee login access, temporary passwords, and role privileges.', show: userPerms.includes('System Parameters & RBAC Admin') },
+    { id: 'activity', label: 'System Activities & Audit Log', icon: Activity, desc: 'Immutable tracking of all cross-module data mutations and logins.', show: userPerms.includes('System Activities & Audit Log') || userPerms.includes('System Parameters & RBAC Admin') },
+    { id: 'rbac', label: 'Role Permissions & Access', icon: Shield, desc: 'Enterprise Role-Based Access Control (RBAC) and user groups.', show: userPerms.includes('System Parameters & RBAC Admin') },
+    { id: 'database', label: 'Database & Cloud Backups', icon: Database, desc: 'Automated daily snapshots, Supabase cluster status, and SQL dumps.', show: userPerms.includes('Database Snapshots & Cloud Recovery') }
+  ].filter(s => s.show !== false);
 
   return (
     <div className="settings-outer-container" style={{ display: 'flex', flexDirection: 'column', gap: '32px', width: '100%', boxSizing: 'border-box' }}>
@@ -984,7 +991,14 @@ const Settings = () => {
                                   </span>
                                   <select
                                     value={selectedEmpForAccess}
-                                    onChange={e => setSelectedEmpForAccess(e.target.value)}
+                                    onChange={e => {
+                                      const empId = e.target.value;
+                                      setSelectedEmpForAccess(empId);
+                                      const emp = enterpriseEmployees.find(empItem => empItem.id === empId);
+                                      if (emp && emp.role) {
+                                        setSelectedRoleForAccess(resolveRoleName(emp.role));
+                                      }
+                                    }}
                                     style={{
                                       width: '100%',
                                       padding: '16px 20px 16px 46px',

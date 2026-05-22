@@ -595,6 +595,46 @@ export const initCloudSync = async () => {
   ]);
 };
 
+export const defaultRoles = [
+  { id: 'ROLE-1', name: 'Executive Administrator', users: 3, permissions: ['Executive Dashboard & Analytics', 'General Ledger & Fiscal Accounting', 'Rent Escrow & Security Deposits', 'System Parameters & RBAC Admin', 'HR Staff Directory & Payroll Runs', 'Lease Agreements & Contracts', 'Rental Properties & Units', 'Corporate & Legal Administration', 'System Activities & Audit Log'] },
+  { id: 'ROLE-2', name: 'Senior Property Manager', users: 8, permissions: ['Rental Properties & Units', 'Lease Agreements & Contracts', 'Tenant Register & Resident KYC', 'Maintenance Dispatch & Tickets', 'Sales Pipeline & CRM Directory'] },
+  { id: 'ROLE-3', name: 'Financial Controller', users: 4, permissions: ['Executive Dashboard & Analytics', 'General Ledger & Fiscal Accounting', 'Rent Escrow & Security Deposits', 'HR Staff Directory & Payroll Runs'] },
+  { id: 'ROLE-4', name: 'Leasing Agent', users: 12, permissions: ['Sales Pipeline & CRM Directory', 'Lease Agreements & Contracts', 'Rental Properties & Units', 'Tenant Register & Resident KYC'] },
+  { id: 'ROLE-5', name: 'Maintenance Dispatcher', users: 6, permissions: ['Maintenance Dispatch & Tickets', 'Rental Properties & Units', 'Tenant Register & Resident KYC'] },
+  { id: 'ROLE-6', name: 'IT Systems Officer', users: 2, permissions: ['System Parameters & RBAC Admin', 'Database Snapshots & Cloud Recovery', 'System Activities & Audit Log'] },
+  { id: 'ROLE-7', name: 'HR Director', users: 2, permissions: ['HR Staff Directory & Payroll Runs', 'Executive Dashboard & Analytics'] },
+  { id: 'ROLE-8', name: 'Account Officer', users: 5, permissions: ['General Ledger & Fiscal Accounting', 'Rent Escrow & Security Deposits'] },
+  { id: 'ROLE-9', name: 'Finance Director', users: 3, permissions: ['Executive Dashboard & Analytics', 'General Ledger & Fiscal Accounting', 'Rent Escrow & Security Deposits', 'HR Staff Directory & Payroll Runs'] },
+  { id: 'ROLE-10', name: 'Administrative Manager', users: 4, permissions: ['Rental Properties & Units', 'Lease Agreements & Contracts', 'Tenant Register & Resident KYC', 'HR Staff Directory & Payroll Runs'] },
+  { id: 'ROLE-11', name: 'Sales Director', users: 3, permissions: ['Sales Pipeline & CRM Directory', 'Executive Dashboard & Analytics', 'Lease Agreements & Contracts', 'Rental Properties & Units'] },
+  { id: 'ROLE-12', name: 'Sales Executive', users: 10, permissions: ['Sales Pipeline & CRM Directory', 'Lease Agreements & Contracts', 'Rental Properties & Units'] }
+];
+
+export const getStoredRoles = () => getLocalData('realtyos_roles', defaultRoles);
+export const saveStoredRoles = (roles) => saveToSupabaseAndStorage('roles', 'realtyos_roles', roles, 'realtyos_roles_update');
+
+export const resolveRoleName = (roleName, rolesList) => {
+  if (!roleName) return '';
+  
+  // Try checking the database / role list first to see if this exact role (case-insensitive) exists
+  const list = rolesList || getStoredRoles();
+  if (list && Array.isArray(list)) {
+    const exactMatch = list.find(r => r.name.trim().toLowerCase() === roleName.trim().toLowerCase());
+    if (exactMatch) {
+      return exactMatch.name;
+    }
+  }
+
+  const norm = roleName.trim().toLowerCase();
+  if (norm === 'hr' || norm === 'human resources' || norm === 'hr director') {
+    return 'HR Director';
+  }
+  if (norm === 'it' || norm === 'it systems officer' || norm === 'it administrator' || norm === 'it officer') {
+    return 'IT Systems Officer';
+  }
+  return roleName;
+};
+
 /**
  * Enterprise Production Launch Purge Pipeline
  * Wipes every single mockup and sandbox database entity from both localStorage and Supabase,

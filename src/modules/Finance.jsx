@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   CreditCard, Wallet, DollarSign, TrendingUp, TrendingDown, Clock, 
@@ -8,7 +8,11 @@ import {
   Zap, Wrench, ShieldAlert
 } from 'lucide-react';
 import { generateRealPDF } from '../lib/pdfService';
-import { getStoredFinancialVouchers, saveStoredFinancialVouchers } from '../lib/masterData';
+import { 
+  getStoredFinancialVouchers, saveStoredFinancialVouchers,
+  getStoredStaffLoans, saveStoredStaffLoans,
+  getStoredStaffPayroll, saveStoredStaffPayroll
+} from '../lib/masterData';
 
 const Finance = () => {
   const [transactions, setTransactions] = useState(() => {
@@ -54,15 +58,49 @@ const Finance = () => {
   const [paymentMethod, setPaymentMethod] = useState('Bank Transfer');
 
   const handleApprove = (id) => {
+    const trx = transactions.find(t => t.id === id);
+    if (!trx) return;
+
     const updated = transactions.map(t => t.id === id ? { ...t, status: 'Approved' } : t);
     saveTransactions(updated);
+
+    // Cross-module synchronization for HR Workflows
+    if (trx.refNo?.startsWith('LN-')) {
+      const loans = getStoredStaffLoans();
+      const updatedLoans = loans.map(l => l.id === trx.refNo ? { ...l, status: 'Active Amortization' } : l);
+      saveStoredStaffLoans(updatedLoans);
+      window.dispatchEvent(new Event('realtyos_staff_update'));
+    } else if (trx.refNo?.startsWith('PAY-')) {
+      const payrolls = getStoredStaffPayroll();
+      const updatedPayrolls = payrolls.map(p => p.id === trx.refNo ? { ...p, status: 'Approved & Disbursed' } : p);
+      saveStoredStaffPayroll(updatedPayrolls);
+      window.dispatchEvent(new Event('realtyos_staff_update'));
+    }
+
     setSuccessMsg(`Voucher ${id} successfully approved and posted to General Ledger.`);
     setTimeout(() => setSuccessMsg(''), 4000);
   };
 
   const handleReject = (id) => {
+    const trx = transactions.find(t => t.id === id);
+    if (!trx) return;
+
     const updated = transactions.map(t => t.id === id ? { ...t, status: 'Rejected' } : t);
     saveTransactions(updated);
+
+    // Cross-module synchronization for HR Workflows
+    if (trx.refNo?.startsWith('LN-')) {
+      const loans = getStoredStaffLoans();
+      const updatedLoans = loans.map(l => l.id === trx.refNo ? { ...l, status: 'Rejected by Finance' } : l);
+      saveStoredStaffLoans(updatedLoans);
+      window.dispatchEvent(new Event('realtyos_staff_update'));
+    } else if (trx.refNo?.startsWith('PAY-')) {
+      const payrolls = getStoredStaffPayroll();
+      const updatedPayrolls = payrolls.map(p => p.id === trx.refNo ? { ...p, status: 'Rejected / Re-audit' } : p);
+      saveStoredStaffPayroll(updatedPayrolls);
+      window.dispatchEvent(new Event('realtyos_staff_update'));
+    }
+
     setSuccessMsg(`Voucher ${id} has been rejected and flagged.`);
     setTimeout(() => setSuccessMsg(''), 4000);
   };
@@ -80,7 +118,7 @@ const Finance = () => {
     e.preventDefault();
     const formData = new FormData(e.target);
     const numAmount = parseFloat(formData.get('amount')) || 0;
-    const formattedAmount = `â‚µ ${numAmount.toLocaleString()}`;
+    const formattedAmount = `₵ ${numAmount.toLocaleString()}`;
 
     let generatedCategory = '';
     let generatedPayerRecipient = '';
@@ -309,7 +347,7 @@ const Finance = () => {
           <div>
             <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Net Portfolio Cash Flow</p>
             <h3 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-main)', marginTop: '4px' }}>
-              â‚µ {(metrics.netCashFlow / 1000).toLocaleString()}k
+              ₵ {(metrics.netCashFlow / 1000).toLocaleString()}k
             </h3>
             <span style={{ fontSize: '12px', color: '#10b981', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px' }}>
               <TrendingUp size={14} /> Reconciled surplus
@@ -337,7 +375,7 @@ const Finance = () => {
           <div>
             <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Realized Outflow</p>
             <h3 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-main)', marginTop: '4px' }}>
-              â‚µ {(metrics.totalExpense / 1000).toLocaleString()}k
+              ₵ {(metrics.totalExpense / 1000).toLocaleString()}k
             </h3>
             <span style={{ fontSize: '12px', color: '#ef4444', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px' }}>
               <TrendingDown size={14} /> Operations & payroll
@@ -352,7 +390,7 @@ const Finance = () => {
           <div>
             <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Rent & Sales Receipts</p>
             <h3 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-main)', marginTop: '4px' }}>
-              â‚µ {((metrics.rentRevenue + metrics.salesRevenue) / 1000).toLocaleString()}k
+              ₵ {((metrics.rentRevenue + metrics.salesRevenue) / 1000).toLocaleString()}k
             </h3>
             <span style={{ fontSize: '12px', color: '#4338ca', fontWeight: '700' }}>Combined gross collections</span>
           </div>
